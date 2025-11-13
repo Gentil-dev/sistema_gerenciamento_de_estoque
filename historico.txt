@@ -1,0 +1,6 @@
+[09/11/2025 12:43:37] - Cadastro de Produto: porta laqueada | Quantidade: 5
+[09/11/2025 12:44:18] - Entrada de Produto: porta laqueada | Quantidade: 5
+[09/11/2025 12:45:26] - Saída de Produto: porta laqueada | Quantidade: 5
+[09/11/2025 12:46:05] - Exclusão de Produto: porta laqueada
+[09/11/2025 13:10:37] - Cadastro de Produto: porta laqueada | Quantidade: 6
+[09/11/2025 13:12:28] - Cadastro de Produto: caixilho 12 cm | Quantidade: 3

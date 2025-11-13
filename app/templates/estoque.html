@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estoque de Portas - CD Porta</title>
+    <style>
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        main {
+            max-width: 950px;
+            margin: 30px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #1f2937;
+        }
+
+        input[type="text"] {
+            display: block;
+            margin: 0 auto 25px;
+            padding: 10px;
+            width: 70%;
+            max-width: 400px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+            text-align: center;
+        }
+
+        th {
+            background-color: #0d6efd;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f6ff;
+        }
+
+        .botoes {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        a {
+            text-decoration: none;
+            color: #007bff;
+            margin-left: 10px;
+            font-size: 15px;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        @media print {
+            button, input, a { display: none; }
+            main { box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <header>Consulta de Estoque - CD Porta</header>
+
+    <main>
+        <h2>Estoque de Portas Laqueadas</h2>
+
+        <input type="text" id="filtro" placeholder="🔍 Buscar produto..." onkeyup="filtrarTabela()">
+
+        <div style="text-align:center; margin-bottom:20px;">
+            <form method="GET" action="/estoque">
+                <label for="produto_id"><strong>Selecionar Produto:</strong></label>
+                <select name="produto_id" id="produto_id" style="padding:8px; font-size:15px;">
+                    <option value="">-- Todos os Produtos --</option>
+                    {% for produto in produtos %}
+                        <option value="{{ produto.id }}">{{ produto.nome }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" style="padding:8px 15px; border:none; border-radius:6px; background:#007bff; color:white; cursor:pointer;">Filtrar</button>
+                <a href="/estoque" style="margin-left:10px; color:#007bff; text-decoration:none;">Mostrar Todos</a>
+            </form>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Quantidade</th>
+                    <th>Preço Unitário (R$)</th>
+                    <th>Observação</th>
+                </tr>
+            </thead>
+            <tbody id="tabela">
+                {% for produto in produtos %}
+                    <tr>
+                        <td>{{ produto.nome }}</td>
+                        <td>{{ produto.quantidade }}</td>
+                        <td>{{ "%.2f"|format(produto.preco_unitario) }}</td>
+                        <td>{{ produto.observacao or '-' }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="4">Nenhum produto cadastrado.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <tfoot>
+            <tr>
+                <td colspan="3" style="text-align:right; font-weight:bold;">Valor Total do Estoque:</td>
+                <td>R$ {{ "%.2f"|format(total_geral) }}</td>
+            </tr>
+        </tfoot>
+
+        <div class="botoes">
+            <button onclick="window.print()">🖨️ Imprimir Estoque</button>
+            {% if gerente_logado %}           
+                <a href="/painel">← Voltar ao Painel</a>
+            {% else %}
+                <a href="/">← Voltar à Página Inicial</a>
+            {% endif %}
+        </div>
+    </main>
+
+    <script>
+        function filtrarTabela() {
+            const filtro = document.getElementById("filtro").value.toLowerCase();
+            const linhas = document.querySelectorAll("#tabela tr");
+
+            linhas.forEach(linha => {
+                const texto = linha.innerText.toLowerCase();
+                linha.style.display = texto.includes(filtro) ? "" : "none";
+            });
+        }
+    </script>
+</body>
+</html>
