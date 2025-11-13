@@ -1,0 +1,22 @@
+# Ignorar ambiente virtual
+laca/
+venv/
+env/
+.virtualenv/
+
+# Ignorar variáveis de ambiente
+.env
+
+# Ignorar caches do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignorar arquivos temporários
+*.log
+*.tmp
+
+# Ignorar pastas de build
+build/
+dist/
