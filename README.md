@@ -187,3 +187,5 @@ Estruturado para deploy na Render (ou outro PaaS compatível com Flask e Postgre
 Banco de dados configurado via variável de ambiente DATABASE_URL.
 
 Código organizado e pronto para produção.
+
+fix: trigger deploy
