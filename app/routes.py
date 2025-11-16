@@ -1,11 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session
 from app import db
 from app.models import Produto
-from dotenv import load_dotenv
 import os
 
 bp = Blueprint('routes', __name__)
-load_dotenv()
+
 
 @bp.route('/')
 def home():
