@@ -13,3 +13,12 @@ class Produto(db.Model):
 
     def __repr__(self):
         return f'<Produto {self.nome}>'
+    
+class Historico(db.Model):
+    __tablename__ = 'historico'
+       
+    id = db.Column(db.Integer, primary_key=True)
+    acao = db.Column(db.String(100), nullable=False)
+    produto_nome = db.Column(db.String(100), nullable=False)
+    quantidade = db.Column(db.Integer, nullable=True)
+    data_hora = db.Column(db.DateTime, nullable=False)

@@ -61,15 +61,37 @@
         Histórico de Movimentações
     </header>
     <main>
-        {% if conteudo %}
-            <pre>{{ conteudo }}</pre>
+        
+        {% if registros %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Data/Hora</th>
+                    <th>Ação</th>
+                    <th>Produto</th>
+                    <th>Quantidade</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in registros %}
+                <tr>
+                    <td>{{ h.data_hora.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                    <td>{{ h.acao }}</td>
+                    <td>{{ h.produto_nome }}</td>
+                    <td>{{ h.quantidade if h.quantidade is not none else '' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
         {% else %}
             <p>Nenhuma movimentação registrada ainda.</p>
         {% endif %}
+
         <div class="botoes">
             <button onclick="window.print()">Imprimir</button>
             <a href="/painel">← Voltar ao Painel</a>
         </div>
+
     </main>
 </body>
 </html>

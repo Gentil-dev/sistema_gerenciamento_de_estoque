@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from app import db
 from app.models import Produto
 import os
+from datetime import datetime, timezone
 
 bp = Blueprint('routes', __name__)
 
@@ -133,16 +134,19 @@ def excluir():
 
 from datetime import datetime
 
-def registrar_historico(acao, produto_nome, quantidade=0):
-    caminho = 'historico.txt'
-    data_hora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
-    linha = f"[{data_hora}] - {acao}: {produto_nome}"
-    if quantidade:
-        linha += f" | Quantidade: {quantidade}"
-    linha += "\n"
+def registrar_historico(acao, produto_nome, quantidade=None):
+    from app.models import Historico
+    data_hora = datetime.now(timezone.utc)
 
-    with open(caminho, 'a', encoding='utf-8') as arquivo:
-        arquivo.write(linha)
+    historico = Historico(
+        acao=acao,
+        produto_nome=produto_nome,
+        quantidade=quantidade,
+        data_hora=data_hora
+    )
+
+    db.session.add(historico)
+    db.session.commit()
 
 
 @bp.route('/historico')
@@ -150,13 +154,10 @@ def historico():
     if not session.get('gerente_logado'):
         return redirect(url_for('routes.gerente'))
 
-    try:
-        with open('historico.txt', 'r', encoding='utf-8') as arquivo:
-            conteudo = arquivo.read()
-    except FileNotFoundError:
-        conteudo = ""
-
-    return render_template('historico.html', conteudo=conteudo)
+    from app.models import Historico
+    registros = Historico.query.order_by(Historico.data_hora.desc()).all()
+     
+    return render_template('historico.html', registros=registros)
 
  
 @bp.route('/estoque')
