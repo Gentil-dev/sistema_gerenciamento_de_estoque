@@ -8,7 +8,12 @@
         body {
             font-family: "Poppins", "Segoe UI", sans-serif;
             color:#1f2937;
-            background: linear-gradient(135deg, #e8f0ff, #f9fbff, #ffffff);
+            /*background: linear-gradient(135deg, #e8f0ff, #f9fbff, #ffffff);*/
+            /*background: linear-gradient(135deg, #d6e4ff, #e2ecff, #f0f4ff);*/
+            /*background: linear-gradient(135deg, #d6e4ff, #e2ecff, #f0f4ff);*/
+            /*background: linear-gradient(135deg, #b6caff, #c7d7ff, #d8e2ff);*/
+            background: linear-gradient(135deg, #b4f0d1, #c3f5da, #d4f9e4);
+
             display: flex;
             justify-content: center;
             align-items: center;
@@ -20,8 +25,9 @@
             text-align: center;
         }
         img {
-            width: 250px;
-            height: auto;
+            height: 160px;
+            width: auto;
+            object-fit: contain;
             margin-bottom: 25px;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.2);
@@ -52,8 +58,8 @@
             font-size: 16px;
             border: none;
             border-radius: 10px;
-            background-color: #007bff;
-            color: white;
+            background-color: #01493d;
+            color: #CCFF33;
             cursor: pointer;
             transition: background 0.3s;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -66,23 +72,46 @@
             font-size: 14px;
         }
         .admin-link a {
-            color: #007bff;
+            color: #1e3a8a
+;
         }
         .admin-link a:hover {
             text-decoration: underline;
         }
         @media (max-width: 600px) {
-            h1 { font-size: 20px; }
-            img { width: 150px; }
-            button { width: 200px; font-size: 15px; }
+            h1 { 
+                font-size: 20px; 
+            }
+            img { 
+                height: 140px;
+                width: auto;
+                object-fit: contain;
+            }
+
+            button { 
+                width: 200px; 
+                font-size: 15px; 
+            }
+        }
+
+        .imagens {
+            display: flex;
+            justify-content: center;
+            gap: 140px; /*espaço entre as imagens */
+            align-items: center;
+            margin-bottom: 25px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <img src="{{ url_for('static', filename='logo.jpeg') }}" alt="Logo CD Porta">
+        <div class="imagens">
+            <img src="{{ url_for('static', filename='polo1.jpeg') }}" alt="Logo CD Porta">
+            <img src="{{ url_for('static', filename='logo.jpeg') }}" alt="Logo CD Porta">
+            <img src="{{ url_for('static', filename='polo2.png') }}" alt="Logo CD Porta">
+        </div>
 
-        <h1>Sistema de Controle de Portas Laqueadas - CD Portas</h1>
+        <h1>CD Portas - Sistema de Controle de Portas Laqueadas</h1>
 
         <div class="botoes">
             <a href="/estoque"><button>Consultar Estoque</button></a>

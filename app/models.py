@@ -21,4 +21,4 @@ class Historico(db.Model):
     acao = db.Column(db.String(100), nullable=False)
     produto_nome = db.Column(db.String(100), nullable=False)
     quantidade = db.Column(db.Integer, nullable=True)
-    data_hora = db.Column(db.DateTime, nullable=False)
+    data_hora = db.Column(db.DateTime(timezone=True), nullable=False)

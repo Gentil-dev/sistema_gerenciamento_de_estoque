@@ -61,7 +61,7 @@
         Histórico de Movimentações
     </header>
     <main>
-        
+
         {% if registros %}
         <table>
             <thead>
@@ -75,7 +75,7 @@
             <tbody>
                 {% for h in registros %}
                 <tr>
-                    <td>{{ h.data_hora.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                    <td>{{ h.data_hora.astimezone(pytz.timezone('America/Sao_Paulo')).strftime('%d/%m/%Y %H:%M:%S') }}</td>
                     <td>{{ h.acao }}</td>
                     <td>{{ h.produto_nome }}</td>
                     <td>{{ h.quantidade if h.quantidade is not none else '' }}</td>

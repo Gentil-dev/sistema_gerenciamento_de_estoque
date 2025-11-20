@@ -2,8 +2,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from app import db
 from app.models import Produto
 import os
-from datetime import datetime, timezone
-
+import pytz
+ 
 bp = Blueprint('routes', __name__)
 
 
@@ -135,8 +135,10 @@ def excluir():
 from datetime import datetime
 
 def registrar_historico(acao, produto_nome, quantidade=None):
+    from datetime import datetime, timezone
     from app.models import Historico
-    data_hora = datetime.now(timezone.utc)
+    
+    data_hora = datetime.now(timezone.utc) 
 
     historico = Historico(
         acao=acao,
@@ -157,7 +159,7 @@ def historico():
     from app.models import Historico
     registros = Historico.query.order_by(Historico.data_hora.desc()).all()
      
-    return render_template('historico.html', registros=registros)
+    return render_template('historico.html', registros=registros, pytz=pytz)
 
  
 @bp.route('/estoque')
