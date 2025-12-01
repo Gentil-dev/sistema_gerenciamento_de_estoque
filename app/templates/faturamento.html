@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Faturamento - CD Porta</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(120deg, #f5f5f5, #e0e0e0);
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+            font-size: 22px;
+            font-weight: bold;
+        }
+        main {
+            max-width: 900px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px 25px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .ano-select {
+            margin-bottom: 20px;
+            font-size: 17px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>Faturamento</header>
+    <main>       
+        <!-- SELECT DO ANO -->
+        <form method="GET" action="/faturamento">
+            <div class="ano-select">
+                <label>Selecione os Anos:</label><br>
+
+                {% for ano in anos_disponiveis %}
+                    <label style="margin-right: 10px;">
+                        <input 
+                            type="checkbox" 
+                            name="anos" 
+                            value="{{ ano }}"
+                            {% if ano in anos_selecionados %}checked{% endif %}
+                        > 
+                        {{ ano }}
+                    </label>
+                {% endfor %}
+            </div>
+            
+            <!-- SELECT DOS MESES -->
+            <div class="mes-select" style="margin-top: 15px; font-size: 17px;">
+                <label>Selecione os Meses:</label><br>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    {% for numero, nome in [
+                        (1, "Janeiro"), (2, "Fevereiro"), (3, "Março"), (4, "Abril"),
+                        (5, "Maio"), (6, "Junho"), (7, "Julho"), (8, "Agosto"),
+                        (9, "Setembro"), (10, "Outubro"), (11, "Novembro"), (12, "Dezembro")
+                    ] %}
+                        <label>
+                            <input 
+                                type="checkbox" 
+                                name="meses" 
+                                value="{{ numero }}"
+                                {% if numero in meses_selecionados %}checked{% endif %}
+                            >
+                            {{ nome }}
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <button type="submit" style="margin-top: 20px;">Filtrar</button>
+            </form>
+
+        <!-- TABELA  -->
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+            <thead>
+                <tr style="background-color: #e9ecef; text-align: left;">
+                    <th style="padding: 10px;">Mês</th>
+                    <th style="padding: 10px;">Faturamento Bruto</th>
+                    <th style="padding: 10px;">Imposto (R$)</th>
+                    <th style="padding: 10px;">Líquido</th>
+                    <th style="padding: 10px;">Ação</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for mes in meses_do_ano %}
+                <form method="POST" action="/faturamento">
+                    <tr style="background: #fff; border-bottom: 1px solid #ddd;">
+
+                        <td style="padding: 10px;">
+                            {% if anos_selecionados|length > 1 %}
+                                {{ mes.nome }} (acumulado) 
+                            {% else %}
+                                {{ mes.nome }} / {{ mes.ano }}
+                            {% endif %}
+                            
+                            <input type="hidden" name="ano" value="{{ mes.ano }}">
+                            <input type="hidden" name="mes" value="{{ mes.numero }}">
+                        </td>
+
+                        <td style="padding: 10px;">
+                            R$ {{ "%.2f"|format(mes.faturamento_bruto) }}                                       
+                        </td>
+
+                        <td style="padding: 10px;">
+                            <input
+                                type="number"
+                                name="valor_despesa"
+                                step="0.01" 
+                                style="width: 100px;"
+                                value="{{ '%.2f'|format(mes.imposto) }}"                            
+                            >
+                        </td>
+
+                        <td style="padding: 10px;">
+                            R$ {{ "%.2f"|format(mes.liquido) }}
+                        </td>
+
+                        <td style="padding: 10px;">
+                            <button type="submit">Salvar</button>
+                        </td>
+                    </tr>
+                </form>
+                {% endfor %}
+            </tbody>
+
+            <tfoot>
+                <tr style="background-color:#d1e7dd; font-weight: bold;">
+                    <td style="padding:10px;">
+                        {% if anos_selecionados|length > 1%}
+                            Totais do Ano (acumulado)
+                        {% else %}
+                            Totais do Ano
+                        {% endif %}
+                    </td>
+                    <td style="padding:10px;">R$ {{ '%.2f'|format(total_bruto) }}</td>
+                    <td style="padding:10px;">R$ {{ '%.2f'|format(total_imposto) }}</td>
+                    <td style="padding:10px;">R$ {{ '%.2f'|format(total_liquido) }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+
+            <div style="margin-top: 20px;">
+                <button 
+                    onclick="window.print()" 
+                    style="
+                        padding: 5px 15px;
+                        font-size: 14px;
+                        cursor: pointer;
+                    "
+                >
+                    Imprimir
+                </button>
+            </div>
+
+        </table>
+
+        <div style="margin-top: 20px;">
+            <a href="/painel">← Voltar ao Painel</a>
+        </div>
+    </main>
+</body>
+</html>

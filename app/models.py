@@ -21,4 +21,14 @@ class Historico(db.Model):
     acao = db.Column(db.String(100), nullable=False)
     produto_nome = db.Column(db.String(100), nullable=False)
     quantidade = db.Column(db.Integer, nullable=True)
+    valor = db.Column(db.Numeric(10, 2), nullable=True) 
     data_hora = db.Column(db.DateTime(timezone=True), nullable=False)
+
+class DespesasMensais(db.Model):
+    __tablename__ = 'despesas_mensais'
+
+    id = db.Column(db.Integer, primary_key=True)
+    ano = db.Column(db.Integer, nullable=False)
+    mes = db.Column(db.Integer, nullable=False)
+    valor_despesa = db.Column(db.Numeric(10, 2), nullable=False, default=0)
+    data_registro = db.Column(db.DateTime(timezone=True), nullable=False)

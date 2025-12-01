@@ -61,7 +61,7 @@ def cadastro():
 
         db.session.add(novo_produto)
         db.session.commit()
-        registrar_historico("Cadastro de Produto", nome, quantidade)
+        registrar_historico("Cadastro de Produto", nome, quantidade, float(preco_unitario))
 
         return redirect(url_for('routes.estoque'))
 
@@ -77,12 +77,21 @@ def entrada():
     if request.method == 'POST':
         produto_id = request.form['produto_id']
         quantidade_adicionada = int(request.form['quantidade'])
-
+        novo_preco = float(request.form['valor'])
+        
         produto = Produto.query.get(produto_id)
-        if produto:
+        if produto: 
+            #a cada remessa,atualiza preço unitário e quantidade
+            produto.preco_unitario = novo_preco
+            
             produto.quantidade += quantidade_adicionada
             db.session.commit()
-            registrar_historico("Entrada de Produto", produto.nome, quantidade_adicionada)  
+            registrar_historico(
+                "Entrada de Produto", 
+                produto.nome, 
+                quantidade_adicionada,
+                novo_preco
+            )  
 
         return redirect(url_for('routes.estoque'))
 
@@ -98,13 +107,15 @@ def saida():
     if request.method == 'POST':
         produto_id = request.form['produto_id']
         quantidade_removida = int(request.form['quantidade'])
-
+        valor_saida = float(request.form['valor']) 
+           
         produto = Produto.query.get(produto_id)
         if produto:
             if produto.quantidade >= quantidade_removida:
                 produto.quantidade -= quantidade_removida
                 db.session.commit()
-                registrar_historico("Saída de Produto", produto.nome, quantidade_removida)  
+                registrar_historico("Saída de Produto", produto.nome, quantidade_removida, valor_saida)
+                  
             else:
                 return "<h3>Erro: quantidade solicitada maior que o estoque disponível!</h3>"
 
@@ -134,16 +145,17 @@ def excluir():
 
 from datetime import datetime
 
-def registrar_historico(acao, produto_nome, quantidade=None):
+def registrar_historico(acao, produto_nome, quantidade=None, valor=None):    
     from datetime import datetime, timezone
     from app.models import Historico
     
-    data_hora = datetime.now(timezone.utc) 
+    data_hora = datetime.now(pytz.timezone("America/Sao_Paulo")) 
 
     historico = Historico(
         acao=acao,
         produto_nome=produto_nome,
         quantidade=quantidade,
+        valor=valor,
         data_hora=data_hora
     )
 
@@ -157,11 +169,174 @@ def historico():
         return redirect(url_for('routes.gerente'))
 
     from app.models import Historico
-    registros = Historico.query.order_by(Historico.data_hora.desc()).all()
-     
+    tipo = request.args.get("tipo", "todos")
+    query = Historico.query
+    if tipo == 'entrada':
+        query = query.filter(Historico.acao == 'Entrada de Produto')
+    elif tipo == 'saida':
+        query = query.filter(Historico.acao == 'Saída de Produto')
+    
+    registros = query.order_by(Historico.data_hora.desc()).all() 
     return render_template('historico.html', registros=registros, pytz=pytz)
 
  
+@bp.route('/faturamento', methods=['GET', 'POST'])
+def faturamento():
+    print(">>> ESTE É O ARQUIVO CORRETO DE FATURAMENTO")
+    
+    from sqlalchemy import text
+
+    result = db.session.execute(
+        text("SELECT id, acao, encode(acao::bytea, 'hex') "
+            "FROM historico WHERE date_part('year', data_hora)=2024;")
+    )
+
+    for row in result:
+        print(">>> DEBUG HEX 2024:", row)
+
+    from datetime import datetime
+    from sqlalchemy import extract, func
+    from app.models import Historico, DespesasMensais
+
+    ano_atual = datetime.now().year
+
+    # ------------------------------
+    # 1. SALVAR IMPOSTO (POST)
+    # ------------------------------
+    if request.method == 'POST':
+        ano = int(request.form.get('ano'))
+        mes = int(request.form.get('mes'))
+        valor_str = request.form.get('valor_despesa', '0').replace(',', '.')
+        valor = float(valor_str)
+
+        despesa = DespesasMensais.query.filter_by(ano=ano, mes=mes).first()
+
+        if despesa:
+            despesa.valor_despesa = valor
+        else:
+            despesa = DespesasMensais(
+                ano=ano,
+                mes=mes,
+                valor_despesa=valor,
+                data_registro=datetime.now()
+            )
+            db.session.add(despesa)
+            
+
+        db.session.commit()
+        return redirect(url_for('routes.faturamento', ano=ano))
+
+    # ------------------------------
+    # 2. ANO SELECIONADO (GET)
+    # ------------------------------
+    anos_selecionados = request.args.getlist("anos", type=int)
+    if not anos_selecionados:   
+        anos_selecionados = [ano_atual]
+
+    ano_selecionado = anos_selecionados[0]
+    
+    # Capturar meses selecionados:
+    meses_selecionados = request.args.getlist("meses", type=int)
+
+    # Se nenhum mês for escolhido, usar todos os 12 meses
+    if len(meses_selecionados) == 0:
+        meses_selecionados = list(range(1, 13))
+
+
+    # 3. LISTA DE ANOS DISPONÍVEIS
+ 
+    anos_disponiveis = (
+        db.session.query(func.date_part('year', Historico.data_hora))
+        .filter(Historico.valor.isnot(None))
+        .distinct()
+        .order_by(func.date_part('year', Historico.data_hora).desc())
+        .all()
+    )
+
+    anos_disponiveis = [int(a[0]) for a in anos_disponiveis]
+
+    if ano_atual not in anos_disponiveis:
+        anos_disponiveis.insert(0, ano_atual)
+
+    # ------------------------------
+    # 4. GERAR LISTA DE 12 MESES
+    # ------------------------------
+    meses_nomes = [
+        "Janeiro", "Fevereiro", "Março", "Abril",
+        "Maio", "Junho", "Julho", "Agosto",
+        "Setembro", "Outubro", "Novembro", "Dezembro"
+    ]
+
+    meses_do_ano = []
+    for i in meses_selecionados:
+        if len(anos_selecionados) > 1:
+            chave = f"acumulado-{i:02d}"
+        else:
+            chave = f"{ano_selecionado}-{i:02d}"
+            
+        meses_do_ano.append({
+            "numero": i,
+            "nome": meses_nomes[i - 1],
+            "ano": ano_selecionado,
+            "chave": chave
+        })
+
+    # ------------------------------
+    # 5. FATURAMENTO BRUTO
+    # ------------------------------
+    for mes in meses_do_ano:
+        bruto = db.session.query(func.sum(Historico.valor)).filter(
+            Historico.acao == "Saída de Produto",
+            extract('year', Historico.data_hora).in_(anos_selecionados),
+            extract('month', Historico.data_hora) == mes["numero"]
+        ).scalar()
+
+        mes["faturamento_bruto"] = float(bruto or 0)
+
+    # ------------------------------
+    # 6. CARREGAR DESPESAS DO ANO
+    # ------------------------------
+    despesas = DespesasMensais.query.filter(
+        DespesasMensais.ano.in_(anos_selecionados),
+        DespesasMensais.mes.in_(meses_selecionados) 
+        ).all()
+
+    despesas_dict = {}
+    for d in despesas:
+        if len(anos_selecionados) > 1:
+            chave = f"acumulado-{d.mes:02d}"
+            despesas_dict[chave] = despesas_dict.get(chave, 0.0) + float(d.valor_despesa)
+        else:
+            chave = f"{d.ano}-{d.mes:02d}"
+            despesas_dict[chave] = float(d.valor_despesa)
+
+    # ------------------------------
+    # 7. IMPOSTO E LÍQUIDO
+    # ------------------------------
+    for mes in meses_do_ano:
+        imposto = despesas_dict.get(mes["chave"], 0.0)
+        mes["imposto"] = float(imposto)        
+        mes["liquido"] = mes["faturamento_bruto"] - mes["imposto"]
+
+     # 9. TOTAIS DO ANO
+    total_bruto = sum(m["faturamento_bruto"] for m in meses_do_ano)
+    total_imposto = sum(m["imposto"] for m in meses_do_ano)
+    total_liquido = sum(m["liquido"] for m in meses_do_ano)
+
+    # ------------------------------
+    # 8. RENDERIZAÇÃO
+    # ------------------------------
+    print(">>> ANOS DISPONIVEIS:", anos_disponiveis)
+
+    return render_template(
+        'faturamento.html',
+        anos_selecionados=anos_selecionados,
+        anos_disponiveis=anos_disponiveis,
+        meses_do_ano=meses_do_ano,
+        total_bruto=total_bruto,
+        total_imposto=total_imposto,
+        total_liquido=total_liquido   
+    )
 @bp.route('/estoque')
 def estoque():
     gerente_logado = session.get('gerente_logado', False)
@@ -179,5 +354,15 @@ def estoque():
             total_geral += float(p.preco_unitario or 0) * int(p.quantidade or 0)
         except (ValueError, TypeError):
             continue
+    total_quantidade = sum(int(p.quantidade or 0) for p in produtos)
+    valor_formatado = "{:,.2f}".format(total_geral).replace(",", "X").replace(".", ",").replace("X", ".")  # <-- única linha nova
+
     gerente_logado = session.get('gerente_logado', False)    
-    return render_template('estoque.html', produtos=produtos, total_geral=total_geral, gerente_logado=gerente_logado)
+    return render_template(
+        'estoque.html', 
+        produtos=produtos, 
+        total_geral=total_geral, 
+        total_quantidade=total_quantidade,
+        valor_formatado=valor_formatado,
+        gerente_logado=gerente_logado
+    )

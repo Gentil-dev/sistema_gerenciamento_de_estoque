@@ -54,6 +54,43 @@
             color: #007bff;
             margin-left: 10px;
         }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th {
+            background-color: #e9ecef;
+            padding: 10px;
+            text-align: left;
+            font-weight: bold;
+            border-bottom: 2px solid #ccc;
+        }
+
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tbody tr:nth-child(odd) {
+            background-color: #f7f9fc;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #ffffff;
+        }
+
+        tbody tr:hover {
+            background-color: #e8f0ff;
+            transition: 0.2s;
+        }
+        table td:nth-child(4),
+        table th:nth-child(4) {
+            text-align: center;
+        }
+
     </style>
 </head>
 <body>
@@ -61,6 +98,12 @@
         Histórico de Movimentações
     </header>
     <main>
+        <!-- FILTROS -->
+        <div style="margin-bottom: 20px; text-align:center;">
+            <a href="/historico?tipo=todos" style="margin-right: 15px;">📄 Todos</a>
+            <a href="/historico?tipo=entrada" style="margin-right: 15px;">⬆️ Entradas</a>
+            <a href="/historico?tipo=saida">⬇️ Saídas</a>
+        </div>        
 
         {% if registros %}
         <table>
@@ -70,15 +113,23 @@
                     <th>Ação</th>
                     <th>Produto</th>
                     <th>Quantidade</th>
+                    <th>Valor (R$)</th>
                 </tr>
             </thead>
             <tbody>
                 {% for h in registros %}
-                <tr>
+                <tr
+                    {% if h.acao == 'Entrada de Produto' %}
+                        style="background-color: #d1e7dd;"
+                    {% elif h.acao == 'Saída de Produto' %}
+                        style="background-color: #f8d7da;"
+                    {% endif %}
+                >
                     <td>{{ h.data_hora.astimezone(pytz.timezone('America/Sao_Paulo')).strftime('%d/%m/%Y %H:%M:%S') }}</td>
                     <td>{{ h.acao }}</td>
                     <td>{{ h.produto_nome }}</td>
                     <td>{{ h.quantidade if h.quantidade is not none else '' }}</td>
+                    <td>{{ ("%.2f" % h.valor) if h.valor is not none else '' }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

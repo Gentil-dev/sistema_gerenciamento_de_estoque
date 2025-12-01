@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from dotenv import load_dotenv
 import os
 
@@ -9,6 +10,8 @@ def create_app():
     load_dotenv()
 
     app = Flask(__name__)
+    print(">>> BANCO USADO PELO FLASK:", os.getenv("DATABASE_URL"))
+
     app.secret_key = 'cd_porta_chave_unica_segura'  # chave para sessão
 
     # Configurações do banco
@@ -17,7 +20,9 @@ def create_app():
 
     db.init_app(app)
     
-    from app.models import Produto, Historico
+    migrate = Migrate(app, db)
+    
+    from app.models import Produto, Historico, DespesasMensais
 
     # Criar tabelas somente no ambiente local
     if os.getenv("RENDER") is None:
