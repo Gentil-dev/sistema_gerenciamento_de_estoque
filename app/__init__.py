@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 import os
+from flask_migrate import Migrate
 
 db = SQLAlchemy()
 
@@ -23,10 +24,8 @@ def create_app():
      
     from app.models import Produto, Historico, DespesasMensais
 
-    # Criar tabelas somente no ambiente local
-    if os.getenv("RENDER") is None:
-        with app.app_context():
-            db.create_all()
+    migrate = Migrate(app, db)
+        
 
     # Importa e registra as rotas
     from app import routes
