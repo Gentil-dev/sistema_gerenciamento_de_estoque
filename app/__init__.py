@@ -6,7 +6,8 @@ import os
 db = SQLAlchemy()
 
 def create_app():
-    load_dotenv()
+    if os.getenv("RENDER") is None:
+        load_dotenv()
 
     app = Flask(__name__)
     print(">>> BANCO USADO PELO FLASK:", os.getenv("DATABASE_URL"))
