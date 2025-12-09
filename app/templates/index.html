@@ -18,7 +18,9 @@
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            height: 100vh;
+            
+            min-height: 100vh;
+            height: auto;
             margin: 0;
         }
         .container {
@@ -78,28 +80,20 @@
         .admin-link a:hover {
             text-decoration: underline;
         }
-        @media (max-width: 600px) {
-            h1 { 
-                font-size: 20px; 
-            }
-            img { 
-                height: 140px;
-                width: auto;
-                object-fit: contain;
-            }
-
-            button { 
-                width: 200px; 
-                font-size: 15px; 
-            }
-        }
-
+         
         .imagens {
             display: flex;
             justify-content: center;
-            gap: 140px; /*espaço entre as imagens */
+            gap: 40px; /*espaço entre as imagens */
             align-items: center;
             margin-bottom: 25px;
+            flex-wrap: wrap
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding-top: 20px; /* desce tudo um pouco */
+            }
         }
     </style>
 </head>

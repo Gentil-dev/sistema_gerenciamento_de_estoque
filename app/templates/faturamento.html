@@ -12,7 +12,7 @@
             padding: 0;
         }
         header {
-            background-color: #007bff;
+            background-color: #00008B;
             color: white;
             text-align: center;
             padding: 15px 0;
@@ -31,6 +31,32 @@
             margin-bottom: 20px;
             font-size: 17px;
         }
+        .filtrar-btn {
+            background-color: #FFA500; /* Cor laranja */
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .filtrar-btn:hover {
+            background-color: #FF7F00; /* Cor laranja mais escuro no hover */
+        }
+
+        .imprimir-btn {
+            background-color: #28a745; /* Cor verde */
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .imprimir-btn:hover {
+            background-color: #218838; /* Cor verde mais escuro no hover */
+        }   
     </style>
 </head>
 
@@ -78,7 +104,7 @@
                 </div>
             </div>
 
-            <button type="submit" style="margin-top: 20px;">Filtrar</button>
+            <button type="submit" class="filtrar-btn" style="margin-top: 20px;">Filtrar</button>
             </form>
 
         <!-- TABELA  -->
@@ -153,7 +179,8 @@
 
             <div style="margin-top: 20px;">
                 <button 
-                    onclick="window.print()" 
+                    onclick="window.print()"
+                    class="imprimir-btn" 
                     style="
                         padding: 5px 15px;
                         font-size: 14px;

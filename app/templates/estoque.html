@@ -13,9 +13,7 @@
         }
 
         header {
-            background-color: #01493d
-
-;
+            background-color: #01493d;
             color: white;
             text-align: center;
             padding: 20px 0;
@@ -62,8 +60,7 @@
         }
 
         th {
-            background-color: #0A8F5C
-;
+            background-color: #0A8F5C;
             color: white;
         }
 
@@ -102,10 +99,52 @@
             text-decoration: underline;
         }
 
+        @media (max-width: 600px) {
+            /* remove layout de tabela */
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+             
+            /* esconde o cabeçalho da tabela no mobile */
+            thead tr {
+                display: none;
+            }
+            /* estilo de card para cada item */
+            tbody tr {
+                background: #f9f9f9;
+                margin-bottom: 15px;
+                padding: 12px;
+                border-radius: 10px;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            }
+            /* cada célula vira uma linha com label */
+            td {
+                display: flex;
+                justify-content: space-between;
+                padding: 10px 5px;
+                border: none;
+            }
+            /* adiciona nome do campo automaticamente */
+            td:nth-child(1)::before { content: "Produto"; font-weight: bold; }
+            td:nth-child(2)::before { content: "Quantidade"; font-weight: bold; }
+            td:nth-child(3)::before { content: "Preço Unit."; font-weight: bold; }
+            td:nth-child(4)::before { content: "Observação"; font-weight: bold; }
+
+            /* card do total também entra no formato */
+            tr[style] {
+                background-color: #e6f0ff !important;
+            }
+
+            td::before {
+                width: 40%;
+            }
+        }   
+        
         @media print {
             button, input, a { display: none; }
             main { box-shadow: none; }
         }
+
     </style>
 </head>
 <body>
@@ -133,45 +172,47 @@
             </form>
         </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Produto</th>
-                    <th>Quantidade</th>
-                    <th>Preço Unitário (R$)</th>
-                    <th>Observação</th>
-                </tr>
-            </thead>
-            <tbody id="tabela">
-                {% for produto in produtos %}
+        <div class="tabela-responsiva">
+            <table>
+                <thead>
                     <tr>
-                        <td>{{ produto.nome }}</td>
-                        <td>{{ produto.quantidade }}</td>
-                        <td>{{ "%.2f"|format(produto.preco_unitario) }}</td>
-                        <td>{{ produto.observacao or '-' }}</td>
+                        <th>Produto</th>
+                        <th>Quantidade</th>
+                        <th>Preço Unitário (R$)</th>
+                        <th>Observação</th>
                     </tr>
-                {% else %}
-                    <tr><td colspan="4">Nenhum produto cadastrado.</td></tr>
-                {% endfor %}
-                
-                {% if produtos|length > 0 %}
-                    <tr style="font-weight: bold; background-color: #cfe2ff;">
-                        <td style="text-align:left;">Valor Total do Estoque=></td>
-                        <td>{{ total_quantidade }}</td>
-                        <td>R$ {{ valor_formatado }}</td>
-                        <td></td>
-                    </tr>   
-                {% endif %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody id="tabela">
+                    {% for produto in produtos %}
+                        <tr>
+                            <td>{{ produto.nome }}</td>
+                            <td>{{ produto.quantidade }}</td>
+                            <td>{{ "%.2f"|format(produto.preco_unitario) }}</td>
+                            <td>{{ produto.observacao or '-' }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="4">Nenhum produto cadastrado.</td></tr>
+                    {% endfor %}
+                    
+                    {% if produtos|length > 0 %}
+                        <tr style="font-weight: bold; background-color: #cfe2ff;">
+                            <td style="text-align:left;">Valor Total do Estoque=></td>
+                            <td>{{ total_quantidade }}</td>
+                            <td>R$ {{ valor_formatado }}</td>
+                            <td></td>
+                        </tr>   
+                    {% endif %}
+                </tbody>
+            </table>
 
-        <div class="botoes">
-            <button onclick="window.print()">🖨️ Imprimir Estoque</button>
-            {% if gerente_logado %}           
-                <a href="/painel">← Voltar ao Painel</a>
-            {% else %}
-                <a href="/">← Voltar à Página Inicial</a>
-            {% endif %}
+            <div class="botoes">
+                <button onclick="window.print()">🖨️ Imprimir Estoque</button>
+                {% if gerente_logado %}           
+                    <a href="/painel">← Voltar ao Painel</a>
+                {% else %}
+                    <a href="/">← Voltar à Página Inicial</a>
+                {% endif %}
+            </div>
         </div>
     </main>
 

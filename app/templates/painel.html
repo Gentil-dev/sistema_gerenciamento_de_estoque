@@ -4,27 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel do Gerente - CD Porta</title>
-    <style>
+
+    <style>  
         body {
             position: relative;
             z-index: 1;
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
- 
+
             background:               
                 linear-gradient(
                     to right,
                     rgba(11, 61, 52, 0.20),   /* verde escuro suave */
                     rgba(11, 61, 52, 0.05),   /* transição */
                     rgba(155, 190, 70, 0.12), /* verde claro suave */
-                    rgba(255, 255, 255, 0)    /* branco puro */
-                ),
-                url("{{ url_for('static', filename='polotransparente.png') }}");
-                                                              
+                    rgba(155, 190, 70, 0.08)    /* branco puro */
+                );
+                                                                 
             background-repeat: no-repeat;
-            background-size: cover;
-            background-position: center 35%;
+            background-size: 100% 100%;
+            background-position: center;
             background-attachment: fixed;
         }
 
@@ -43,6 +43,9 @@
             flex-wrap: wrap;
             justify-content: center;
             gap: 15px;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
         }
         a {
             text-decoration: none;
@@ -65,6 +68,32 @@
                 width: 100%;
             }
         }
+
+        @media (max-width: 600px) {
+            body {
+                background-size: 100% auto !important; /* força caber na largura */
+                background-position: top center !important; /* garante topo */
+                background-attachment: scroll !important; /* remove bug mobile */
+                padding-top: 20px;
+
+            }
+        }
+         
+        .logo-area {
+            background-image: url("{{ url_for('static', filename='polotransparente.png') }}");
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            width: 100%;
+            height: min(420px, 40vh);
+            margin-top: 15px;
+            opacity: 0.93;
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+
     </style>
 </head>
 <body>
@@ -82,5 +111,7 @@
         <a href="/faturamento"><button>Faturamento</button></a>
         <a href="/logout"><button>Sair</button></a>
     </div>
+    <div class="logo-area"></div>
+
 </body>
 </html>
