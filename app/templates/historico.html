@@ -114,6 +114,8 @@
                     <th>Produto</th>
                     <th>Quantidade</th>
                     <th>Valor (R$)</th>
+                    <th>Lucro Real (R$)</th>
+                    <th>NF / Lote</th>
                 </tr>
             </thead>
             <tbody>
@@ -130,6 +132,16 @@
                     <td>{{ h.produto_nome }}</td>
                     <td>{{ h.quantidade if h.quantidade is not none else '' }}</td>
                     <td>{{ ("%.2f" % h.valor) if h.valor is not none else '' }}</td>
+                    <!-- Lucro Real (somente para saída) -->
+                    <td>
+                        {% if h.acao == 'Saída de Produto' %}
+                            {{ ("%.2f" % h.lucro_real) if h.lucro_real is not none else '0.00' }}
+                        {% else %}
+                            -
+                        {% endif %} 
+                    </td>
+                    <!-- Nota Fiscal -->
+                    <td>{{ h.nota_fiscal if h.nota_fiscal else '-' }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

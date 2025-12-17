@@ -113,6 +113,7 @@
                 <tr style="background-color: #e9ecef; text-align: left;">
                     <th style="padding: 10px;">Mês</th>
                     <th style="padding: 10px;">Faturamento Bruto</th>
+                    <th style="padding: 10px;">Lucro Real (FIFO)</th>
                     <th style="padding: 10px;">Imposto (R$)</th>
                     <th style="padding: 10px;">Líquido</th>
                     <th style="padding: 10px;">Ação</th>
@@ -137,6 +138,10 @@
 
                         <td style="padding: 10px;">
                             R$ {{ "%.2f"|format(mes.faturamento_bruto) }}                                       
+                        </td>
+
+                        <td style="padding: 10px;">
+                            R$ {{ "%.2f"|format(mes.lucro_real) }}                                       
                         </td>
 
                         <td style="padding: 10px;">
@@ -170,28 +175,37 @@
                             Totais do Ano
                         {% endif %}
                     </td>
-                    <td style="padding:10px;">R$ {{ '%.2f'|format(total_bruto) }}</td>
-                    <td style="padding:10px;">R$ {{ '%.2f'|format(total_imposto) }}</td>
-                    <td style="padding:10px;">R$ {{ '%.2f'|format(total_liquido) }}</td>
+
+                    <td style="padding:10px;">
+                        R$ {{ '%.2f'|format(total_bruto) }}
+                    </td>
+                    <td style="padding:10px;">
+                        R$ {{ '%.2f'|format(total_lucro_real) }}
+                    </td>
+                    <td style="padding:10px;">
+                        R$ {{ '%.2f'|format(total_imposto) }}
+                    </td>
+                    <td style="padding:10px;">
+                        R$ {{ '%.2f'|format(total_liquido) }}
+                    </td>
                     <td></td>
                 </tr>
             </tfoot>
-
-            <div style="margin-top: 20px;">
-                <button 
-                    onclick="window.print()"
-                    class="imprimir-btn" 
-                    style="
-                        padding: 5px 15px;
-                        font-size: 14px;
-                        cursor: pointer;
-                    "
-                >
-                    Imprimir
-                </button>
-            </div>
-
         </table>
+
+        <div style="margin-top: 20px;">
+            <button 
+                onclick="window.print()"
+                class="imprimir-btn" 
+                style="
+                    padding: 5px 15px;
+                    font-size: 14px;
+                    cursor: pointer;
+                "
+            >
+                Imprimir
+            </button>
+        </div>        
 
         <div style="margin-top: 20px;">
             <a href="/painel">← Voltar ao Painel</a>

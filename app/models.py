@@ -14,6 +14,22 @@ class Produto(db.Model):
     def __repr__(self):
         return f'<Produto {self.nome}>'
     
+class Lote(db.Model):
+    __tablename__ = 'lotes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    produto_id = db.Column(db.Integer, db.ForeignKey('produtos.id'), nullable=False)
+    
+    quantidade_inicial = db.Column(db.Integer, nullable=False)
+    quantidade_atual = db.Column(db.Integer, nullable=False)
+    
+    custo_unitario = db.Column(db.Numeric(10, 2), nullable=False)
+    nota_fiscal = db.Column(db.String(50), nullable=True)
+    
+    data_entrada = db.Column(db.DateTime(timezone=True), nullable=False)
+    
+    produto = db.relationship('Produto', backref='lotes')
+    
 class Historico(db.Model):
     __tablename__ = 'historico'
        
@@ -23,7 +39,8 @@ class Historico(db.Model):
     quantidade = db.Column(db.Integer, nullable=True)
     valor = db.Column(db.Numeric(10, 2), nullable=True) 
     data_hora = db.Column(db.DateTime(timezone=True), nullable=False)
-
+    lucro_real = db.Column(db.Numeric(10, 2), nullable=True)
+    nota_fiscal = db.Column(db.String(50), nullable=True)
 class DespesasMensais(db.Model):
     __tablename__ = 'despesas_mensais'
 
