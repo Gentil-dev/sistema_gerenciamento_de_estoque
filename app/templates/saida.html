@@ -66,11 +66,14 @@
     <form method="POST">
         <h2>Saída de Produto</h2>
 
-        {% if erro %}
-            <p style="color: red; font-weight: bold;">
-                {{ erro }}
-            </p>
-        {% endif %}
+        {% with messages = get_flashed_messages(category_filter=["erro"]) %}
+            {% if messages %}
+                <p style="color: red; font-weight: bold;">
+                {{ messages[0] }}
+                </p>
+            {% endif %}
+            {% endwith %}
+
 
         <label>Selecione o Produto:</label>
         <select name="produto_id" required>

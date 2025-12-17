@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app import db
 from app.models import Lote, Produto, Historico, DespesasMensais
 import os
@@ -167,13 +167,10 @@ def saida():
             return "<h3>Erro: Produto não encontrado!</h3>"
         #verificar estoque
         if produto.quantidade < quantidade_removida:
-            produtos = Produto.query.all()
+            flash("Quantidade solicitada maior que o estoque disponível.", "erro")
             
-            return render_template(
-                'saida.html',
-                produtos=produtos,
-                erro="Erro: Quantidade solicitada maior que o estoque disponível."
-            )
+            return redirect(url_for('routes.saida'))
+            
             
         #FIFO-consumir lotes antigos
         lotes = (
