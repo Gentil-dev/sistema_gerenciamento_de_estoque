@@ -45,7 +45,8 @@ def gerente():
 
     if request.method == 'POST':
         senha_digitada = request.form.get('senha')
-
+        print(">>> SENHA DIGITADA:", repr(senha_digitada))
+          
         if senha_correta and check_password_hash(senha_correta, senha_digitada):
             session['gerente_logado'] = True
             session.permanent = True
