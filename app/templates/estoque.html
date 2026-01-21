@@ -265,8 +265,11 @@
         <div class="filtro-produto">
             <form method="GET" action="/estoque">
                 <label for="produto_id"><strong>Selecionar Produto:</strong></label>
-                <select name="produto_id" id="produto_id" class="select-produto">  
-                        style="padding:8px; font-size:15px;"''
+                <select 
+                    name="produto_id"
+                    id="produto_id"
+                    class="select-produto"
+                    style="padding:8px; font-size:15px;"                    
                 >
                     <option value="">-- Todos os Produtos --</option>
                     {% for produto in produtos %}

@@ -617,7 +617,7 @@ def atualizar_custo_lote(lote_id):
 @bp.route('/estoque')
 def estoque():
         
-    from app.models import Lote
+     
     gerente_logado = session.get('gerente_logado', False)
     
     produto_id = request.args.get('produto_id')
