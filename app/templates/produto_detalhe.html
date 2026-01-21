@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Detalhes do Produto</title>
+
+    <style>
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            /*background: #d4f9e4;*/
+            background: #084C4A;
+            margin: 0;
+            padding: 0;
+        }
+
+        .page-header {
+            background-color: #7DCE73;             
+            text-align: center;
+            padding: 20px 0;             
+        }
+        .page-header h1 {
+            margin: 0;                         
+            font-size: 22px;
+            font-weight: 600;            
+            color: #006F83;
+        }
+
+        main {
+            max-width: 1000px;
+            margin: 30px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            margin-bottom: 10px;
+            color: #1f2937;
+        }
+
+        .produto-info {
+            margin-bottom: 25px;
+        }
+
+        .produto-info p {
+            margin: 6px 0;
+            font-size: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 15px;
+        }
+
+        th, td {
+            padding: 8px 12px;
+            line-height: 1.2;
+            border-bottom: 1px solid #dee2e6;
+            text-align: center;
+            vertical-align: middle;
+        }
+        table tr {
+            height: 40px;
+        }
+
+        th {
+            background-color: #006F83;
+            color: white;
+        }
+         
+        .botoes {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .botoes a {
+            display: inline-block;
+            min-width: 220px;
+            height: 44px;
+            line-height: 44px;
+            text-align: center;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 15px;
+            background-color: #ffffff;
+            color: #0A8F5C;
+            box-shadow: inset 0 0 0 2px #0A8F5C;
+        }
+
+        .botoes a:hover {
+            background-color: #f0f0f0;
+        }
+
+        @media print {
+            .botoes { display: none; }
+            main { box-shadow: none; }
+        }
+
+        td:has(form) {
+            padding-top: 4px;
+            padding-bottom: 4px;
+            vertical-align: middle;
+        }
+
+        /* Garante que múltiplos forms não estiquem a linha */
+        td form {
+            display: inline-flex;
+            align-items: center;
+            margin: 0;
+        }
+
+        /* Inputs e botões compactos */
+        td input,
+        td button {
+            height: 26px;
+            line-height: 26px;
+            padding: 0 6px;
+            font-size: 13px;
+            box-sizing: border-box;
+        }
+         
+        .hidden {
+            display: none;
+        }
+
+        .mt-10 {
+            margin-top: 10px;
+        }
+        
+        .btn-editar-nome {
+            margin-top: 8px;
+        }
+
+        .form-editar-nome {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+
+    </style>
+</head>
+<body>
+<header class="page-header">
+    <h1>Detalhes do Produto</h1>
+</header>
+
+<main>
+    <h2 class="produto-nome">{{ produto.nome }}</h2>
+
+    <button type="button" class="btn-editar-nome">   
+        Editar nome
+    </button>
+
+    <form         
+        method="POST"
+        action="/produto/{{ produto.id }}/editar-nome"
+        class="form-editar-nome hidden mt-10"
+     >
+        <input type="text"            
+                name="nome"
+                value="{{ produto.nome }}"
+                class="input-sm w-280"
+                required
+        >
+        <button type="submit" class="btn-sm">Salvar</button>
+    </form>
+
+    <div class="produto-info">
+        <p><strong>Quantidade Total em Estoque:</strong> {{ produto.quantidade }}</p>
+        <p><strong>Observação:</strong> {{ produto.observacao or '-' }}</p>
+    </div>
+
+    <h3>Lotes (FIFO)</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Data de Entrada</th>
+                <th>Qtd. Inicial</th>
+                <th>Qtd. Atual</th>
+                {% if produto.tipo != 'wpc' %}
+                    <th>Custo Unitário (R$)</th>
+                {% endif %}
+                <th>Nota Fiscal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lote in lotes %}
+                <tr>
+                    <td>{{ lote.data_entrada
+                        .astimezone(pytz.timezone('America/Sao_Paulo')) 
+                        .strftime('%d/%m/%Y %H:%M:%S') }}
+                    </td>
+
+                    <td>{{ lote.quantidade_inicial }}</td>
+                    <!-- QTD Atual -->
+                    <td>
+                        {% if produto.tipo == 'wpc' %}
+                            {{ lote.quantidade_atual }}
+                        {% else %}
+                            {% if lote.quantidade_atual > 0 %}                                                         
+                                <form method="POST" action="/lote/{{ lote.id }}/quantidade" 
+                                    class="form-inline">                                  
+                                    <input 
+                                        type="number" 
+                                        name="quantidade_atual"
+                                        value="{{ lote.quantidade_atual }}"
+                                        min="0" 
+                                        max="{{ lote.quantidade_inicial }}"
+                                        class="input-sm w-80"                                                                                                                    
+                                        required
+                                    >                                                                                                                                                             
+                                    <button type="submit" class="btn-sm">Salvar</button>
+                                </form> 
+                            {% else%} 
+                                0                                                         
+                            {% endif %}
+                        {% endif %}
+                        </td> 
+
+                        <!-- CUSTO MADEIRA -->
+                        {% if produto.tipo != 'wpc' %}
+                        <td>
+                            {% if lote.quantidade_atual > 0 %}
+                                <form method="POST" action="/lote/{{ lote.id }}/custo" 
+                                    class="form-inline">
+                                    <input
+                                        type="text"
+                                        name="custo_unitario"
+                                        value="{{ '%.2f'|format(lote.custo_unitario) }}"
+                                        class="input-sem w-90"
+                                        required
+                                    >                                    
+                                    <button type="submit" >Salvar</button>
+                                </form>
+                            {% else %}
+                                {{ "%.2f"|format(lote.custo_unitario) }}
+                            {% endif %}
+                        </td>
+                        {% endif %}
+
+                        <!-- NOTA FISCAL -->
+                        <td>
+                            {% if produto.tipo == 'wpc' %}
+                                {{ lote.nota_fiscal or '-' }}
+                            {% else %}                        
+                                <form method="POST" action="/lote/{{ lote.id }}/nota-fiscal" 
+                                    class="form-inline"
+                                >                                         
+                                    <input 
+                                        type="text" 
+                                        name="nota_fiscal" 
+                                        value="{{ lote.nota_fiscal or ''}}"
+                                        class="input-sem w-140"
+                                    >
+                                    <button type="submit" class="btn-sm">Salvar</button>         
+                                </form>
+                            {% endif %}
+                        </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5">Nenhum lote encontrado.</td>
+                </tr>
+                {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="botoes">
+        <a href="/estoque">← Voltar ao Estoque</a>
+    </div>
+
+</main>
+
+<script>
+    const btnEditar = document.querySelector('.btn-editar-nome');
+    const formEditar = document.querySelector('.form-editar-nome');
+
+    if (btnEditar && formEditar) {
+        btnEditar.addEventListener('click', () => {
+            formEditar.classList.remove('hidden');
+            btnEditar.classList.add('hidden');
+        });
+    }
+</script>
+
+</body>
+</html>

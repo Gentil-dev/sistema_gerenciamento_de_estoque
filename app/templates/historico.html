@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Histórico de Movimentações - CD Porta</title>
+</head>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -71,7 +72,12 @@
 
         td {
             padding: 10px;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;             
+        }
+        td.nf-lote {
+            white-space: pre-line;
+            width: 110px;
+            vertical-align: top;
         }
 
         tbody tr:nth-child(odd) {
@@ -85,14 +91,8 @@
         tbody tr:hover {
             background-color: #e8f0ff;
             transition: 0.2s;
-        }
-        table td:nth-child(4),
-        table th:nth-child(4) {
-            text-align: center;
-        }
-
+        }                 
     </style>
-</head>
 <body>
     <header>
         Histórico de Movimentações
@@ -140,8 +140,10 @@
                             -
                         {% endif %} 
                     </td>
-                    <!-- Nota Fiscal -->
-                    <td>{{ h.nota_fiscal if h.nota_fiscal else '-' }}</td>
+                    <!-- Nota Fiscal -->                     
+                    <td class="nf-lote">
+                        {{ h.nota_fiscal or '-' }}                         
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

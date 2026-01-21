@@ -66,13 +66,12 @@
     <form method="POST">
         <h2>Cadastrar Produto</h2>
         <label>Nome:</label>
-        <input type="text" name="nome" required>
-
-        <label>Quantidade:</label>
-        <input type="number" name="quantidade" min="0" required>
-
-        <label>Preço Unitário (R$):</label>
-        <input type="number" name="preco_unitario" step="0.01" min="0" required>
+        <input type="text" name="nome" required>  
+        <label>Tipo de Produto:</label>
+        <select name="tipo" required>
+            <option value="madeira" selected>Produtos de Madeira</option>
+            <option value="wpc">Produtos WPC</option>
+        </select>
 
         <label>Observação:</label>
         <textarea name="observacao" rows="3"></textarea>

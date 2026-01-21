@@ -5,9 +5,10 @@ import os
 import pytz
 from werkzeug.security import check_password_hash 
 from functools import wraps
-from datetime import datetime
 from app.db_utils import transactional
 from sqlalchemy import text
+from datetime import datetime
+
 
 
 bp = Blueprint('routes', __name__)
@@ -76,30 +77,54 @@ def cadastro():
         return redirect(url_for('routes.gerente'))
 
     if request.method == 'POST':
-        nome = request.form['nome']
-        quantidade = request.form['quantidade']
-        preco_unitario = request.form['preco_unitario']
-        observacao = request.form['observacao']
+        nome = request.form.get('nome') 
+        tipo = request.form.get('tipo', 'madeira')        
+        observacao = request.form.get('observacao')
 
+        if not nome:
+            flash("informe o nome do produto", "erro")
+            return redirect(url_for('routes.cadastro'))
+        
         novo_produto = Produto(
-            nome=nome,
-            quantidade=int(quantidade),
-            preco_unitario=float(preco_unitario),
-            observacao=observacao
+            nome=nome.strip(), 
+            quantidade=0,            
+            observacao=observacao.strip() if observacao else None,
+            tipo=tipo
         )
 
         db.session.add(novo_produto)
          
         registrar_historico(
             "Cadastro de Produto",
-            nome, 
-            quantidade, 
-            valor=None
+            nome
         )
  
         return redirect(url_for('routes.estoque'))
 
     return render_template('cadastro.html')
+
+@bp.route('/produto/<int:produto_id>/editar-nome', methods=['POST'])
+@gerente_required
+@transactional
+def editar_nome_produto(produto_id):
+    produto = Produto.query.get_or_404(produto_id)
+
+    novo_nome = request.form.get('nome', '').strip()
+    if not novo_nome:
+        flash("Nome inválido.", "erro")
+        return redirect(url_for('routes.detalhe_produto', produto_id=produto.id))
+
+    nome_antigo = produto.nome
+    produto.nome = novo_nome
+
+    registrar_historico(
+        acao="Edição de Produto",
+        produto_nome=f"{nome_antigo} → {novo_nome}"
+    )
+
+    flash("Nome do produto atualizado com sucesso.", "sucesso")
+    return redirect(url_for('routes.detalhe_produto', produto_id=produto.id))
+
 
 @bp.route('/entrada', methods=['GET', 'POST'])
 @gerente_required
@@ -110,12 +135,22 @@ def entrada():
 
     produtos = Produto.query.all()
 
-    if request.method == 'POST':        
-        
-        produto_id = request.form['produto_id']
-        quantidade_adicionada = int(request.form['quantidade'])
-        novo_preco = float(request.form['valor'])
-        nota_fiscal = request.form['nota_fiscal']
+    if request.method == 'POST':                
+        produto_id = request.form.get('produto_id')
+        quantidade_str = request.form.get('quantidade')
+        valor_str = request.form.get('valor')
+        nota_fiscal = request.form.get('nota_fiscal')
+
+        if not produto_id or not quantidade_str or not valor_str:
+            flash("Preencha todos os campos obrigatórios.", "erro")
+            return redirect(url_for('routes.entrada'))
+
+        try:
+            quantidade_adicionada = int(quantidade_str)
+            novo_preco = float(valor_str.replace(',', '.'))
+        except ValueError:
+            flash("Quantidade ou valor inválido.", "erro")
+            return redirect(url_for('routes.entrada'))
         
         produto = Produto.query.get(produto_id)
         if produto: 
@@ -146,6 +181,45 @@ def entrada():
 
     return render_template('entrada.html', produtos=produtos)
 
+def processar_saida_produto(produto, quantidade_removida, valor_total_saida):
+    lotes = (
+        Lote.query
+        .filter_by(produto_id=produto.id)   
+        .filter(Lote.quantidade_atual > 0)
+        .order_by(Lote.data_entrada.asc())
+        .all()
+    )
+    quantidade_necessaria = quantidade_removida
+    custo_total = 0
+        
+    for lote in lotes:
+        if quantidade_necessaria == 0:
+            break
+        
+        consumir = min(lote.quantidade_atual, quantidade_necessaria) 
+        #atualiza saldo do lote
+        lote.quantidade_atual -= consumir
+        #soma custo real da saída
+        custo_total += float(lote.custo_unitario)*consumir        
+        quantidade_necessaria -= consumir
+        
+    if quantidade_necessaria > 0:
+        raise ValueError("Erro: estoque inconsistente nos lotes FIFO.")
+ 
+    produto.quantidade -= quantidade_removida
+    lucro_real = valor_total_saida - custo_total                   
+    #atualiza estoque do produto  
+    nota_fiscal = lotes[0].nota_fiscal if lotes else None
+    #Registra histórico com NF ou lote                
+    registrar_historico(
+        "Saída de Produto",
+        produto.nome, 
+        quantidade_removida, 
+        valor_total_saida,   #valor total saída
+        nota_fiscal=nota_fiscal,
+        lucro_real=lucro_real             
+    )
+
 @bp.route('/saida', methods=['GET', 'POST'])
 @gerente_required
 @transactional
@@ -156,74 +230,39 @@ def saida():
     produtos = Produto.query.all()
 
     if request.method == 'POST':
-                 
-        produto_id = request.form['produto_id']
-        quantidade_removida = int(request.form['quantidade'])
-        valor_total_saida = float(request.form['valor']) #Valor total da saída
-           
-        produto = Produto.query.get(produto_id)
-             
-        if not produto:
-            return "<h3>Erro: Produto não encontrado!</h3>"
-        #verificar estoque
-        if produto.quantidade < quantidade_removida:
-            flash("Quantidade solicitada maior que o estoque disponível.", "erro")
-            
+        produto_id = request.form.get('produto_id')
+        quantidade_str = request.form.get('quantidade')
+        valor_str = request.form.get('valor')
+
+        if not produto_id or not quantidade_str or not valor_str:
+            flash("Preencha todos os campos.", "erro")
             return redirect(url_for('routes.saida'))
+
+        try:
+            quantidade_removida = int(quantidade_str)
+            valor_total_saida = float(valor_str.replace(',', '.'))
+
             
+            produto = Produto.query.get(produto_id)                
+            if not produto:
+                raise ValueError(" Produto não encontrado!")
+            #verificar estoque
+            if produto.quantidade < quantidade_removida:
+                flash("Quantidade solicitada maior que o estoque disponível.", "erro")
+                return redirect(url_for('routes.saida'))
             
-        #FIFO-consumir lotes antigos
-        lotes = (
-            Lote.query
-            .filter_by(produto_id=produto.id)   
-            .filter(Lote.quantidade_atual > 0)
-            .order_by(Lote.data_entrada.asc())
-            .all()
-        )
-        quantidade_necessaria = quantidade_removida
-        custo_total_saida = 0
-            
-        for lote in lotes:
-            if quantidade_necessaria == 0:
-                break
-            
-            disponivel = lote.quantidade_atual
-            consumir = min(disponivel, quantidade_necessaria) 
-            #atualiza saldo do lote
-            lote.quantidade_atual -= consumir
-            #soma custo real da saída
-            custo_total_saida += float(lote.custo_unitario)*consumir
-            
-            quantidade_necessaria -= consumir
-            
-        if quantidade_necessaria > 0:
-            raise BusinessError(
-                "Erro: estoque inconsistente nos lotes."
-                "Verifique o cadastro."
+            processar_saida_produto(
+                produto=produto, 
+                quantidade_removida=quantidade_removida,                       
+                valor_total_saida=valor_total_saida
             )
-                    
-        
-        #atualiza estoque do produto
-        produto.quantidade -= quantidade_removida
-        nota_fiscal = lotes[0].nota_fiscal if lotes else None
-        #Lucro real calculado-FIFO
-        lucro_real = valor_total_saida - custo_total_saida
-        
-        #Registra histórico com NF ou lote                
-        registrar_historico(
-            "Saída de Produto",
-            produto.nome, 
-            quantidade_removida, 
-            valor_total_saida,   #valor total saída
-            nota_fiscal=nota_fiscal,
-            lucro_real=lucro_real             
-        )
-         
-                             
-        return redirect(url_for('routes.estoque'))
-
-    return render_template('saida.html', produtos=produtos)
-
+            return redirect(url_for('routes.estoque'))  
+        except ValueError as e: 
+            flash(str(e), "erro")
+            raise
+    return render_template('saida.html', produtos=produtos  )
+    
+  
 @bp.route('/excluir', methods=['GET', 'POST'])
 @gerente_required
 @transactional
@@ -242,16 +281,15 @@ def excluir():
         if produto:
             lotes = Lote.query.filter_by(produto_id=produto.id).count()
             if lotes > 0:
-                return "<h3>Erro: produto possui lotes registrados e não pode ser excluído.</h3>"
-            
+                flash("Erro: produto possui lotes registrados e não pode ser excluído.", "erro")
+                return redirect(url_for('routes.excluir'))
+             
             db.session.delete(produto)            
             registrar_historico("Exclusão de Produto", produto.nome)    
              
         return redirect(url_for('routes.estoque'))
 
     return render_template('excluir.html', produtos=produtos)
-
-from datetime import datetime
 
 def registrar_historico(
     acao, 
@@ -261,9 +299,7 @@ def registrar_historico(
     nota_fiscal=None,
     lucro_real=None
     ):    
-         
-    data_hora = agora_sp() 
-
+               
     historico = Historico(
         acao=acao,
         produto_nome=produto_nome,
@@ -276,8 +312,6 @@ def registrar_historico(
 
     db.session.add(historico)
      
-
-
 @bp.route('/historico')
 def historico():
     if not session.get('gerente_logado'):
@@ -297,35 +331,33 @@ def historico():
 @bp.route('/faturamento', methods=['GET', 'POST'])
 @gerente_required
 @transactional
-def faturamento():
-    print(">>> ESTE É O ARQUIVO CORRETO DE FATURAMENTO")
-    
-    from sqlalchemy import text
-
-    result = db.session.execute(
-        text("SELECT id, acao, encode(acao::bytea, 'hex') "
-            "FROM historico WHERE date_part('year', data_hora)=2024;")
-    )
-
-    for row in result:
-        print(">>> DEBUG HEX 2024:", row)
+def faturamento():    
+    from sqlalchemy import text          
 
     from sqlalchemy import extract, func
  
-    ano_atual = datetime.now().year
+    ano_atual = agora_sp().year
 
-    # ------------------------------
-    # 1. SALVAR IMPOSTO (POST)
-    # ------------------------------
+     # 1. SALVAR IMPOSTO (POST)
     if request.method == 'POST':
         anos_selecionados = request.args.getlist("anos", type=int)
         if len(anos_selecionados) > 1:
             return redirect(url_for('routes.faturamento', anos=anos_selecionados))
         
-        ano = int(request.form.get('ano'))
-        mes = int(request.form.get('mes'))
-        valor_str = request.form.get('valor_despesa', '0').replace(',', '.')
-        valor = float(valor_str)
+        ano_str = request.form.get('ano')
+        mes_str = request.form.get('mes')
+        valor_str = request.form.get('valor_despesa')
+        
+        if not ano_str or not mes_str or not valor_str:
+            flash("Preencha todos os campos da despesa.", "erro")
+            return redirect(url_for('routes.faturamento'))
+        try:
+            ano = int(ano_str)
+            mes = int(mes_str)
+            valor = float(valor_str.replace(',', '.'))
+        except ValueError:
+            flash("Dados de despesa inválidos.", "erro")
+            return redirect(url_for('routes.faturamento'))
 
         despesa = DespesasMensais.query.filter_by(ano=ano, mes=mes).first()
 
@@ -336,7 +368,7 @@ def faturamento():
                 ano=ano,
                 mes=mes,
                 valor_despesa=valor,
-                data_registro=datetime.now()
+                data_registro=agora_sp()
             )
             db.session.add(despesa)
                      
@@ -372,9 +404,7 @@ def faturamento():
     if ano_atual not in anos_disponiveis:
         anos_disponiveis.insert(0, ano_atual)
 
-    # ------------------------------
     # 4. GERAR LISTA DE 12 MESES
-    # ------------------------------
     meses_nomes = [
         "Janeiro", "Fevereiro", "Março", "Abril",
         "Maio", "Junho", "Julho", "Agosto",
@@ -395,27 +425,45 @@ def faturamento():
             "chave": chave
         })
 
-    # ------------------------------
+
     # 5. FATURAMENTO BRUTO
-    # ------------------------------
-    for mes in meses_do_ano:
-        bruto = db.session.query(func.sum(Historico.valor)).filter(
+    dados_historico = (
+        db.session.query(
+            extract('year', Historico.data_hora).label('ano'),
+            extract('month', Historico.data_hora).label('mes'),
+            func.sum(Historico.valor).label('bruto'),
+            func.sum(Historico.lucro_real).label('lucro_real')
+        )
+        .filter(
             Historico.acao == "Saída de Produto",
-            Historico.valor.isnot(None),
             extract('year', Historico.data_hora).in_(anos_selecionados),
-            extract('month', Historico.data_hora) == mes["numero"]
-        ).scalar()
+            extract('month', Historico.data_hora).in_(meses_selecionados)
+        )
+        .group_by(
+            extract('year', Historico.data_hora),
+            extract('month', Historico.data_hora)
+        )
+        .all()
+    )
 
-        mes["faturamento_bruto"] = float(bruto or 0)
+    resumo = {}
+    for row in dados_historico:
+        chave = (
+            f"acumulado-{int(row.mes):02d}"
+            if len(anos_selecionados) > 1
+            else f"{int(row.ano)}-{int(row.mes):02d}"
+        )
+        resumo[chave] = {
+            "bruto": float(row.bruto or 0),
+            "lucro_real": float(row.lucro_real or 0)
+        }
+        
+    for mes in meses_do_ano:
+        dados = resumo.get(mes["chave"], {})
+        mes["faturamento_bruto"] = dados.get("bruto", 0.0)
+        mes["lucro_real"] = dados.get("lucro_real", 0.0)
 
-        # Lucro real FIFO
-        soma_lucro_real = db.session.query(func.sum(Historico.lucro_real)).filter(
-                Historico.acao == "Saída de Produto",
-                Historico.lucro_real.isnot(None),   
-                extract('year', Historico.data_hora).in_(anos_selecionados),
-                extract('month', Historico.data_hora) == mes["numero"]  
-        ).scalar()
-        mes["lucro_real"] = float(soma_lucro_real or 0)
+
         
     # 6. CARREGAR DESPESAS DO ANO
     despesas = DespesasMensais.query.filter(
@@ -446,8 +494,7 @@ def faturamento():
     total_liquido = total_lucro_real - total_imposto  
     
     #RENDERIZAÇÃO
-    print(">>> ANOS DISPONIVEIS:", anos_disponiveis)
-
+ 
     return render_template(
         'faturamento.html',
         anos_selecionados=anos_selecionados,
@@ -458,8 +505,118 @@ def faturamento():
         total_imposto=total_imposto,
         total_liquido=total_liquido   
     )
+    
+@bp.route('/produto/<int:produto_id>')
+@gerente_required
+def detalhe_produto(produto_id):
+    produto = Produto.query.get_or_404(produto_id)
+
+    lotes = (
+        Lote.query
+        .filter_by(produto_id=produto.id)
+        .order_by(Lote.data_entrada.asc())
+        .all()
+    )
+
+    return render_template(
+        'produto_detalhe.html',
+        produto=produto,
+        lotes=lotes,
+        pytz=pytz
+    )
+@bp.route('/lote/<int:lote_id>/nota-fiscal', methods=['POST'])
+@gerente_required
+@transactional
+def atualizar_nota_fiscal(lote_id):
+    lote = Lote.query.get_or_404(lote_id)
+
+    nota_fiscal = request.form.get('nota_fiscal', '').strip()
+    
+    if nota_fiscal == '':
+        lote.nota_fiscal = None
+    else:
+        lote.nota_fiscal = nota_fiscal[:50] 
+
+    registrar_historico(
+        acao="Atualização de Nota Fiscal",
+        produto_nome=lote.produto.nome,
+        nota_fiscal=lote.nota_fiscal
+    )
+    flash("Nota fiscal atualizada com sucesso.", "sucesso")
+    return redirect(url_for('routes.detalhe_produto', produto_id=lote.produto_id))
+
+@bp.route('/lote/<int:lote_id>/quantidade', methods=['POST'])
+@gerente_required
+@transactional
+def atualizar_quantidade_lote(lote_id):
+    lote = Lote.query.get_or_404(lote_id)
+
+    if lote.quantidade_atual == 0:
+        flash("Lote já consumido. Não é possível editar.", "erro")
+        return redirect(url_for('routes.detalhe_produto', produto_id=lote.produto_id))
+
+    try:
+        nova_qtd = int(request.form.get('quantidade_atual'))
+    except (TypeError, ValueError):
+        flash("Quantidade inválida.", "erro")
+        return redirect(url_for('routes.detalhe_produto', produto_id=lote.produto_id))
+
+    if nova_qtd < 0 or nova_qtd > lote.quantidade_inicial:
+        flash("Quantidade fora do limite do lote.", "erro")
+        return redirect(url_for('routes.detalhe_produto', produto_id=lote.produto_id))
+
+    delta = nova_qtd - lote.quantidade_atual
+
+    lote.quantidade_atual = nova_qtd
+    lote.produto.quantidade += delta
+
+    registrar_historico(
+        acao="Ajuste Manual de Lote",
+        produto_nome=lote.produto.nome,
+        quantidade=delta,
+        nota_fiscal="Lote {}:\n{} → {}".format(
+            lote.id,
+            lote.quantidade_atual - delta,
+            lote.quantidade_atual
+        )
+    )
+
+
+    flash("Quantidade do lote atualizada com sucesso.", "sucesso")
+    return redirect(url_for('routes.detalhe_produto', produto_id=lote.produto_id))
+
+@bp.route('/lote/<int:lote_id>/custo', methods=['POST'])
+@gerente_required
+@transactional
+def atualizar_custo_lote(lote_id):
+    lote = Lote.query.get_or_404(lote_id)
+
+    try:
+        novo_custo = float(request.form.get('custo_unitario', '').replace(',', '.'))
+    except (ValueError, AttributeError):
+        flash("Custo inválido.", "erro")
+        return redirect(url_for('routes.detalhe_produto', produto_id=lote.produto_id))
+
+    custo_antigo = float(lote.custo_unitario)
+    lote.custo_unitario = novo_custo
+
+    registrar_historico(
+        acao="Ajuste de Custo de Lote",
+        produto_nome=lote.produto.nome,
+        valor=custo_antigo - novo_custo,
+        nota_fiscal="Lote {}:\n{} → {}".format(
+            lote.id,
+            custo_antigo,
+            novo_custo
+        )
+    )
+
+    flash("Custo do lote atualizado com sucesso.", "sucesso")
+    return redirect(url_for('routes.detalhe_produto', produto_id=lote.produto_id))
+
 @bp.route('/estoque')
 def estoque():
+        
     from app.models import Lote
     gerente_logado = session.get('gerente_logado', False)
     
@@ -470,6 +627,11 @@ def estoque():
     else:
         produtos = Produto.query.all()
         
+    produtos_madeira = [p for p in produtos if p.tipo == 'madeira']
+    produtos_wpc = [p for p in produtos if p.tipo == 'wpc']
+
+    total_quantidade_wpc = sum(int(p.quantidade or 0) for p in produtos_wpc)
+    
     #carrega todos lotes de uma vez
     lotes = Lote.query.all()
     #agrupa lotes por produto
@@ -480,7 +642,7 @@ def estoque():
     total_geral = 0
     total_lotes = 0
     
-    for p in produtos:
+    for p in produtos_madeira:
         for lote in lotes_por_produto.get(p.id, []):
             try:
                 total_geral += float(lote.custo_unitario or 0) * int(lote.quantidade_atual)
@@ -488,17 +650,20 @@ def estoque():
             except (ValueError, TypeError):
                 continue
             
-    total_quantidade = sum(int(p.quantidade or 0) for p in produtos)
+    total_quantidade = sum(int(p.quantidade or 0) for p in produtos_madeira)
     
     if total_lotes != total_quantidade:
         return "<h3>Erro: divergência entre estoque consolidado e lotes (FIFO).<h3>"
     valor_formatado = "{:,.2f}".format(total_geral).replace(",", "X").replace(".", ",").replace("X", ".")
     
     return render_template(
-        'estoque.html', 
+        'estoque.html',
         produtos=produtos, 
+        produtos_madeira=produtos_madeira, 
+        produtos_wpc=produtos_wpc, 
         total_geral=total_geral, 
         total_quantidade=total_quantidade,
+        total_quantidade_wpc=total_quantidade_wpc,
         valor_formatado=valor_formatado,
         gerente_logado=gerente_logado
     )

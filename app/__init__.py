@@ -12,7 +12,6 @@ def create_app():
         load_dotenv()
 
     app = Flask(__name__)
-    print(">>> BANCO USADO PELO FLASK:", os.getenv("DATABASE_URL"))
     app.permanent_session_lifetime = timedelta(minutes=30)
 
     app.secret_key = 'cd_porta_chave_unica_segura'  # chave para sessão

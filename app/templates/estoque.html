@@ -14,7 +14,7 @@
 
         header {
             background-color: #01493d;
-            color: white;
+            color: #d4f9e4;
             text-align: center;
             padding: 20px 0;
             font-size: 22px;
@@ -54,22 +54,42 @@
         }
 
         th, td {
-            padding: 12px;
+            padding: 8px 12px;
+            line-height: 1.2; 
             border-bottom: 1px solid #dee2e6;
             text-align: center;
+            vertical-align: middle;
         }
+         
+        table td input,
+        table td button {
+            height: 32px;
+            padding: 4px 6px;
+            line-height: 1;
+            box-sizing: border-box;
+        }
+        table td:first-child {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
 
         th {
             background-color: #0A8F5C;
             color: white;
         }
-
+         
         tr:nth-child(even) {
             background-color: #e0e0e0;
         }
         tr:nth-child(odd) {
             background-color: #e6ecea;
         }
+        tr.linha-total {
+            background-color: #cfe2ff !important;
+        }
+
 
         .botoes {
             text-align: center;
@@ -169,7 +189,7 @@
             margin: 12px auto 0;            
             background-color: #ffffff;
             color: #0A8F5C;
-            box-shadow: inset 0 0 0 2px #0056b3;
+            box-shadow: inset 0 0 0 2px #0A8F5C;
             cursor: pointer;
             transition: background 0.2s, color 0.2s;
         }          
@@ -177,20 +197,77 @@
             background-color: #f0f0f0;
             color: #0A8FC;
         }
+
+        .linha-total {
+            font-weight: bold;
+            background-color: #cfe2ff;
+        }
+
+        .total-label {
+            text-align: left;
+        }
+        .linha-produto {
+            cursor: pointer;
+        }
+        .btn-filtrar {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+        }
+        .link-mostrar-todos {
+            margin-left: 10px;
+            color: #0000FF;
+        }
+        .select-produto {
+            padding: 8px;
+            font-size: 15px;
+        }
+        .filtro-produto {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .btn-imprimir {
+            background-color: #0A8F5C;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .titulo-wpc {
+            margin-top: 40px;
+            text-align: left;
+        }
+        .conteudo-principal {
+            max-width: 950px;
+            margin: 30px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+
     </style>
 </head> 
 <body>
-    <header>Consulta de Estoque - CD Porta</header>
+    <header>Consulta de Estoque - CD Portas</header>
 
-    <main>
+    <main class="conteudo-principal">
         <h2>Estoque de Portas Laqueadas</h2>
+        <h3>Produtos de Madeira</h3>
 
         <input type="text" id="filtro" placeholder="🔍 Buscar produto..." onkeyup="filtrarTabela()">
 
-        <div style="text-align:center; margin-bottom:20px;">
+        <div class="filtro-produto">
             <form method="GET" action="/estoque">
                 <label for="produto_id"><strong>Selecionar Produto:</strong></label>
-                <select name="produto_id" id="produto_id" style="padding:8px; font-size:15px;">
+                <select name="produto_id" id="produto_id" class="select-produto">  
+                        style="padding:8px; font-size:15px;"''
+                >
                     <option value="">-- Todos os Produtos --</option>
                     {% for produto in produtos %}
                         <option value="{{ produto.id }}"
@@ -199,8 +276,10 @@
                         </option>
                     {% endfor %}
                 </select>
-                <button type="submit" style="padding:8px 15px; border:none; border-radius:6px; color:white; cursor:pointer;">Filtrar</button>
-                <a href="/estoque" style="margin-left:10px; color:#0000FF;">Mostrar Todos</a>
+                <button type="submit" class="btn-filtrar">
+                    Filtrar
+                </button>
+                <a href="/estoque" class="link-mostrar-todos">Mostrar Todos</a>
             </form>
         </div>
 
@@ -210,35 +289,68 @@
                     <tr>
                         <th>Produto</th>
                         <th>Quantidade</th>
-                        <th>Preço Unitário (R$)</th>
+                        <th>Valor em Estoque (R$)</th>
                         <th>Observação</th>
                     </tr>
                 </thead>
                 <tbody id="tabela">
-                    {% for produto in produtos %}
-                        <tr>
+                    {% for produto in produtos_madeira %}
+                        <tr class="linha-produto" data-url="/produto/{{ produto.id }}"> 
                             <td>{{ produto.nome }}</td>
                             <td>{{ produto.quantidade }}</td>
-                            <td>{{ "%.2f"|format(produto.preco_unitario) }}</td>
+                            <td>-</td>
                             <td>{{ produto.observacao or '-' }}</td>
                         </tr>
                     {% else %}
-                        <tr><td colspan="4">Nenhum produto cadastrado.</td></tr>
-                    {% endfor %}
-                    
-                    {% if produtos|length > 0 %}
-                        <tr style="font-weight: bold; background-color: #cfe2ff;">
-                            <td style="text-align:left;">Valor Total do Estoque=></td>
-                            <td>{{ total_quantidade }}</td>
-                            <td>R$ {{ valor_formatado }}</td>
-                            <td></td>
-                        </tr>   
-                    {% endif %}
+                        <tr><td colspan="4">Nenhum produto de madeira cadastrado.</td></tr>
+                    {% endfor %}                                     
                 </tbody>
+
+                <tfoot>
+                    <tr class="linha-total">
+                        <td class="total-label">TOTAL</td>
+                        <td>{{ total_quantidade }}</td>
+                        <td>R$ {{ valor_formatado }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>               
+
+            </table>
+
+            <h3 class="titulo-wpc">Produtos WPC</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>Quantidade</th>
+                        <th>Observação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for produto in produtos_wpc %}
+                        <tr class="linha-produto" data-url="/produto/{{ produto.id }}">  
+                            <td>{{ produto.nome }}</td>
+                            <td>{{ produto.quantidade }}</td>
+                            <td>{{ produto.observacao or '-' }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="3">Nenhum produto WPC cadastrado.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+
+                <tfoot>
+                    <tr class="linha-total">
+                        <td class="total-label">TOTAL</td>
+                        <td>{{ total_quantidade_wpc }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
             </table>
 
             <div class="botoes">
-                <button onclick="window.print()">🖨️ Imprimir Estoque</button>
+                <button class="btn-imprimir">🖨️ Imprimir Estoque</button>
                 {% if gerente_logado %}           
                     <a href="/painel" class="voltar-home">← Voltar ao Painel</a>
                 {% else %}
@@ -250,14 +362,54 @@
 
     <script>
         function filtrarTabela() {
-            const filtro = document.getElementById("filtro").value.toLowerCase();
+            const termo = document.getElementById("filtro").value.toLowerCase();
             const linhas = document.querySelectorAll("#tabela tr");
+            const select = document.getElementById("produto_id");
 
             linhas.forEach(linha => {
-                const texto = linha.innerText.toLowerCase();
-                linha.style.display = texto.includes(filtro) ? "" : "none";
+                const textoProduto = linha.cells[0]?.innerText.toLowerCase() || "";
+
+                if (textoProduto.includes(termo)) {
+                    linha.style.display = "";             
+                } else {
+                    linha.style.display = "none";
+                }
+            });
+
+            // Reset select
+            select.selectedIndex = 0;
+
+            // Se limpar o campo, mostrar tudo         
+            if (termo.length === 0) {
+                linhas.forEach(linha => linha.style.display = "");
+                select.selectedIndex = 0;
+            }
+        }
+
+        function filtrarProduto(produtoId) {
+            window.location.href = `/estoque?produto_id=${produtoId}`;
+        }
+
+    </script>
+    <script>
+        document.querySelectorAll('.linha-produto').forEach(linha => {
+            linha.addEventListener('click', () => {
+                const url = linha.dataset.url;
+                if (url) {
+                    window.location.href = url;
+                }
+            });
+        });
+    </script>
+    <script>
+        const btnImprimir = document.querySelector('.btn-imprimir');
+
+        if (btnImprimir) {
+            btnImprimir.addEventListener('click', () => {
+                window.print();
             });
         }
     </script>
+
 </body>
 </html>
