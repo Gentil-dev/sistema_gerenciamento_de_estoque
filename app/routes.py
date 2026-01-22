@@ -19,6 +19,17 @@ def healthcheck_db():
     db.session.execute(text("SELECT 1"))
     return {'status': 'ok'}
 
+@bp.route('/debug-produtos-colunas')
+def debug_produtos_colunas():
+    result = db.session.execute(text("""
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'produtos'
+        ORDER BY ordinal_position
+    """))
+    return {"colunas": [row[0] for row in result]}
+
+
 
 def agora_sp():
     return datetime.now(pytz.timezone("America/Sao_Paulo"))
