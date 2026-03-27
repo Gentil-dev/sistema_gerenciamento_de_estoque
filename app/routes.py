@@ -620,11 +620,15 @@ def estoque():
     gerente_logado = session.get('gerente_logado', False)
     
     produto_id = request.args.get('produto_id')
+    search = request.args.get('search', '').strip()
+
+    query = Produto.query
 
     if produto_id and produto_id.isdigit():
-        produtos = Produto.query.filter_by(id=int(produto_id)).all()
-    else:
-        produtos = Produto.query.all()
+        query = query.filter(Produto.id == int(produto_id))
+    if search:
+        query = query.filter(Produto.nome.ilike(f"%{search}%"))
+    produtos = query.all()
         
     produtos_madeira = [p for p in produtos if p.tipo == 'madeira']
     produtos_wpc = [p for p in produtos if p.tipo == 'wpc']

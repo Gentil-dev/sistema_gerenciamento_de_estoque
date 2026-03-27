@@ -271,7 +271,9 @@
     </table>
 
     <div class="botoes">
-        <a href="/estoque">← Voltar ao Estoque</a>
+        <a href= "{{ request.args.get('next', '/estoque') }}">
+            ← Voltar ao Estoque
+        </a>
     </div>
 
 </main>

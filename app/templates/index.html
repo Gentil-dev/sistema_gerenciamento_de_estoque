@@ -3,47 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>CD Porta - Sistema de Controle</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: "Poppins", "Segoe UI", sans-serif;
             color:#1f2937;
-            /*background: linear-gradient(135deg, #e8f0ff, #f9fbff, #ffffff);*/
-            /*background: linear-gradient(135deg, #d6e4ff, #e2ecff, #f0f4ff);*/
-            /*background: linear-gradient(135deg, #d6e4ff, #e2ecff, #f0f4ff);*/
-            /*background: linear-gradient(135deg, #b6caff, #c7d7ff, #d8e2ff);*/
             background: linear-gradient(135deg, #b4f0d1, #c3f5da, #d4f9e4);
-
             display: flex;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
-            flex-direction: column;
-            
+            flex-direction: column;            
             min-height: 100vh;
-            height: auto;
             margin: 0;
+            padding-top: 70px;
+            box-sizing: border-box;            
         }
         .container {
+            width: min(1100px, 92vw);
             text-align: center;
+            padding-top: 24px;
         }
-        img {
-            height: 160px;
+        img {              
             width: auto;
             object-fit: contain;
             margin-bottom: 25px;
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
         }
         img:hover {
             transform: scale(1.05);
             box-shadow: 0 6px 25px rgba(0,0,0,0.25);
         }
         h1 {
-            font-size: 28px;
-            letter-spacing: 0.5px;
+            font-size: 38px;
+            line-height: 1.2;
+            letter-spacing: 0;
             color: #1e3a8a;
-            margin-bottom: 30px;
+            margin: 0 auto 22px;
+            max-width: 980px;
         }
         .botoes {
             display: flex;
@@ -51,15 +54,17 @@
             gap: 15px;
             align-items: center;
         }
-        a {
+
+        .botoes a {
             text-decoration: none;
         }
+
         button {
-            width: 220px;
-            padding: 12px 0;
-            font-size: 16px;
+            width: 240px;
+            padding: 14px 0;
+            font-size: 18px;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             background-color: #01493d;
             color: #CCFF33;
             cursor: pointer;
@@ -67,16 +72,25 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         button:hover {
-            background-color: #0056b3;
+            background-color: #012a20;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
+
         .admin-link {
-            margin-top: 25px;
-            font-size: 14px;
+            margin-top: 18px;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.4;
         }
+
         .admin-link a {
-            color: #1e3a8a
-;
+            color: #1e3a8a;
+            font-weight: 700;
+            font-family: inherit;
+            text-decoration: none;
         }
+
         .admin-link a:hover {
             text-decoration: underline;
         }
@@ -84,15 +98,93 @@
         .imagens {
             display: flex;
             justify-content: center;
-            gap: 40px; /*espaço entre as imagens */
+            gap: 60px; /*espaço entre as imagens */
             align-items: center;
-            margin-bottom: 25px;
-            flex-wrap: wrap
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .imagens img {
+            width: 145px;
+            height: auto;
+            object-fit: contain;
+            object-position: center;                          
+        }
+
+        .imagens img:not(.logo-principal) {
+            opacity: 0.92;
+        }
+
+        .imagens img:first-child {
+            transform: translateY(0);
+        }
+
+        .imagens img:last-child {
+            transform: translateY(0);
+        }
+
+
+        .imagens img.logo-principal {
+            width: 250px;             
+            opacity: 1;
         }
 
         @media (max-width: 600px) {
             body {
-                padding-top: 20px; /* desce tudo um pouco */
+                justify-content: center;
+                padding-top: 24px; /* desce tudo um pouco */
+            }
+
+            .imagens {
+                display: flex;                                  
+                flex-direction: column;
+                align-items: center;
+                gap: 18px;
+                margin-bottom: 20px;
+            }
+            .imagens img {
+                    width: 64px;                     
+                    display: block;
+                    margin-bottom: 0;                    
+            }
+            .imagens img.logo-principal {
+                width: 112px;
+                height: auto;
+            }
+            .imagens img:first-child,
+            .imagens img:last-child {
+                transform: none;
+            }
+
+            .container {
+                width: 100%;
+                max-width: 360px;             
+                margin: 0 auto;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding-top: 0;
+                transform: translateY(-28px);                                 
+            }
+             
+            h1 {
+                font-size: 20px;
+                line-height: 1.25;
+                letter-spacing: -0.2px;
+                max-width: 300px;
+                margin: 0 auto 16px;   
+            }
+
+            button {
+                width: 260px;                 
+                padding: 13px 0;
+                font-size: 16px;             
+            }
+
+            .botoes {
+                 width: 100%;
+                 max-width: 260px;
+                 align-items: center;
             }
         }
     </style>
@@ -101,7 +193,7 @@
     <div class="container">
         <div class="imagens">
             <img src="{{ url_for('static', filename='polo1.jpeg') }}" alt="Logo CD Porta">
-            <img src="{{ url_for('static', filename='logo.jpeg') }}" alt="Logo CD Porta">
+            <img src="{{ url_for('static', filename='logo.jpeg') }}" alt="Logo CD Porta" class="logo-principal">
             <img src="{{ url_for('static', filename='polo2.png') }}" alt="Logo CD Porta">
         </div>
 
