@@ -91,7 +91,104 @@
         tbody tr:hover {
             background-color: #e8f0ff;
             transition: 0.2s;
-        }                 
+        }
+
+        .filtros-historico {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .filtros-historico a {
+            margin-right: 15px;
+        }
+
+        .filtros-historico a:last-child {
+            margin-right: 0;
+        }
+        
+        @media (max-width: 600px) {
+            main {
+                padding: 10px;
+            }
+
+            header {
+                padding: 16px 12px;
+                font-size: 18px;
+                line-height: 1.3;
+            }
+
+            table,
+            thead,
+            tbody,
+            th,
+            td,
+            tr {
+                display: block;
+            }
+
+            td.nf-lote {
+                white-space: normal;
+                width: auto; 
+            }
+
+            thead {
+                display: none;
+            }
+
+            tbody tr {
+                margin-bottom: 14px;
+                padding: 12px;
+                border-radius: 10px;
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+            }
+
+            td {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 10px;
+                padding: 8px 0;
+                border: none;
+                word-break: break-word;
+            }
+
+            td::before {
+                font-weight: bold;
+                min-width: 120px;
+                margin-right: 10px;
+            }
+
+            td:nth-child(1)::before { content: "Ação"; }
+            td:nth-child(2)::before { content: "Produto"; }
+            td:nth-child(3)::before { content: "Quantidade"; }
+            td:nth-child(4)::before { content: "Valor (R$)"; }
+            td:nth-child(5)::before { content: "Lucro Real (R$)"; }
+            td:nth-child(6)::before { content: "NF / Lote"; }
+            td:nth-child(7)::before { content: "Data/Hora"; }
+
+            .botoes {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .botoes a,
+            .botoes button {
+                margin: 0;
+            }
+
+            .filtros-historico {
+                display: flex;
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .filtros-historico a {
+                margin-right: 0;
+            }
+        }        
     </style>
 <body>
     <header>
@@ -99,23 +196,23 @@
     </header>
     <main>
         <!-- FILTROS -->
-        <div style="margin-bottom: 20px; text-align:center;">
-            <a href="/historico?tipo=todos" style="margin-right: 15px;">📄 Todos</a>
-            <a href="/historico?tipo=entrada" style="margin-right: 15px;">⬆️ Entradas</a>
+        <div class="filtros-historico">
+            <a href="/historico?tipo=todos">📄 Todos</a>
+            <a href="/historico?tipo=entrada">⬆️ Entradas</a>
             <a href="/historico?tipo=saida">⬇️ Saídas</a>
         </div>        
 
         {% if registros %}
         <table>
             <thead>
-                <tr>
-                    <th>Data/Hora</th>
+                <tr>                    
                     <th>Ação</th>
                     <th>Produto</th>
                     <th>Quantidade</th>
                     <th>Valor (R$)</th>
                     <th>Lucro Real (R$)</th>
                     <th>NF / Lote</th>
+                    <th>Data/Hora</th>
                 </tr>
             </thead>
             <tbody>
@@ -126,13 +223,12 @@
                     {% elif h.acao == 'Saída de Produto' %}
                         style="background-color: #f8d7da;"
                     {% endif %}
-                >
-                    <td>{{ h.data_hora.astimezone(pytz.timezone('America/Sao_Paulo')).strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                >                    
                     <td>{{ h.acao }}</td>
                     <td>{{ h.produto_nome }}</td>
                     <td>{{ h.quantidade if h.quantidade is not none else '' }}</td>
                     <td>{{ ("%.2f" % h.valor) if h.valor is not none else '' }}</td>
-                    <!-- Lucro Real (somente para saída) -->
+                     <!-- Lucro Real (somente para saída) -->
                     <td>
                         {% if h.acao == 'Saída de Produto' %}
                             {{ ("%.2f" % h.lucro_real) if h.lucro_real is not none else '0.00' }}
@@ -144,6 +240,7 @@
                     <td class="nf-lote">
                         {{ h.nota_fiscal or '-' }}                         
                     </td>
+                    <td>{{ h.data_hora.astimezone(pytz.timezone('America/Sao_Paulo')).strftime('%d/%m/%Y %H:%M:%S') }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
