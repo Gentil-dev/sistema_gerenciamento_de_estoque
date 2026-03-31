@@ -56,7 +56,55 @@
         }
         .imprimir-btn:hover {
             background-color: #218838; /* Cor verde mais escuro no hover */
-        }   
+        } 
+        
+        @media print {
+            header,
+            form,
+            .filtrar-btn,
+            .imprimir-btn,
+            a,
+            button,
+            input {
+                display: none !important;
+            }
+
+            body {
+                background: #ffffff !important;
+                margin: 0;
+                padding: 0;
+            }
+
+            main {
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+            }
+
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                margin-top: 0 !important;
+            }
+
+            th,
+            td {
+                padding: 8px !important;
+                border: 1px solid #ccc !important;
+            }
+
+            tr {
+                page-break-inside: avoid;
+            }
+
+            tfoot tr {
+                font-weight: bold;
+            }
+        }
+
     </style>
 </head>
 
