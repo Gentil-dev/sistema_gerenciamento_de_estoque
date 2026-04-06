@@ -1,6 +1,13 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from app import db
-from app.models import Lote, Produto, Historico, DespesasMensais
+from app.models import (
+    Lote, 
+    Produto,
+    Historico, 
+    DespesasMensais, 
+    MovimentacaoSaida,
+    ItemMovimentacaoSaida,
+)
 import os
 import pytz
 from werkzeug.security import check_password_hash 
@@ -8,6 +15,7 @@ from functools import wraps
 from app.db_utils import transactional
 from sqlalchemy import text
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 
 
 
@@ -189,17 +197,24 @@ def processar_saida_produto(produto, quantidade_removida, valor_total_saida):
         .all()
     )
     quantidade_necessaria = quantidade_removida
-    custo_total = 0
+    itens_movimentacao = []
+    custo_total = Decimal('0.00')
         
     for lote in lotes:
         if quantidade_necessaria == 0:
             break
         
-        consumir = min(lote.quantidade_atual, quantidade_necessaria) 
+        consumir = min(lote.quantidade_atual, quantidade_necessaria)
+        
+        itens_movimentacao.append({
+            'lote_id': lote.id,
+            'quantidade': consumir,
+            'custo_unitario': lote.custo_unitario,
+        })
         #atualiza saldo do lote
         lote.quantidade_atual -= consumir
         #soma custo real da saída
-        custo_total += float(lote.custo_unitario)*consumir        
+        custo_total += lote.custo_unitario * consumir        
         quantidade_necessaria -= consumir
         
     if quantidade_necessaria > 0:
@@ -209,6 +224,27 @@ def processar_saida_produto(produto, quantidade_removida, valor_total_saida):
     lucro_real = valor_total_saida - custo_total                   
     #atualiza estoque do produto  
     nota_fiscal = lotes[0].nota_fiscal if lotes else None
+    
+    movimentacao = MovimentacaoSaida(
+        produto_id=produto.id,
+        quantidade=quantidade_removida,
+        valor_total=valor_total_saida,
+        custo_total=custo_total,
+        lucro_real=lucro_real,         
+        data_hora=agora_sp()
+    )
+    db.session.add(movimentacao)
+    
+    for item in itens_movimentacao:
+        db.session.add(
+            ItemMovimentacaoSaida(
+                movimentacao_saida=movimentacao,
+                lote_id=item['lote_id'],
+                quantidade=item['quantidade'],
+                custo_unitario=item['custo_unitario'],
+            )
+        )
+    
     #Registra histórico com NF ou lote                
     registrar_historico(
         "Saída de Produto",
@@ -239,28 +275,33 @@ def saida():
 
         try:
             quantidade_removida = int(quantidade_str)
-            valor_total_saida = float(valor_str.replace(',', '.'))
-
+            valor_total_saida = Decimal(valor_str.replace(',', '.'))
+        except (ValueError, InvalidOperation):             
+            flash("Quantidade ou valor inválido.", "erro")
+            return redirect(url_for('routes.saida'))
+        
+        if quantidade_removida <= 0:
+            flash("A quantidade deve ser maior que zero.", "erro")
+            return redirect(url_for('routes.saida'))
             
-            produto = Produto.query.get(produto_id)                
-            if not produto:
-                raise ValueError(" Produto não encontrado!")
-            #verificar estoque
-            if produto.quantidade < quantidade_removida:
-                flash("Quantidade solicitada maior que o estoque disponível.", "erro")
-                return redirect(url_for('routes.saida'))
-            
-            processar_saida_produto(
-                produto=produto, 
-                quantidade_removida=quantidade_removida,                       
-                valor_total_saida=valor_total_saida
-            )
-            return redirect(url_for('routes.estoque'))  
-        except ValueError as e: 
-            flash(str(e), "erro")
-            raise
-    return render_template('saida.html', produtos=produtos  )
-    
+        produto = Produto.query.get(produto_id)                
+        if not produto:
+            flash("Produto não encontrado.", "erro")
+            return redirect(url_for('routes.saida'))
+        #verificar estoque
+        if produto.quantidade < quantidade_removida:
+            flash("Quantidade solicitada maior que o estoque disponível.", "erro")
+            return redirect(url_for('routes.saida'))
+        
+        processar_saida_produto(
+            produto=produto, 
+            quantidade_removida=quantidade_removida,                       
+            valor_total_saida=valor_total_saida
+        )
+        return redirect(url_for('routes.estoque')) 
+    return render_template('saida.html', produtos=produtos) 
+        
+        
   
 @bp.route('/excluir', methods=['GET', 'POST'])
 @gerente_required
@@ -434,7 +475,7 @@ def faturamento():
             func.sum(Historico.lucro_real).label('lucro_real')
         )
         .filter(
-            Historico.acao == "Saída de Produto",
+            Historico.acao.in_(["Saída de Produto", "Estorno de Saída"]),
             extract('year', Historico.data_hora).in_(anos_selecionados),
             extract('month', Historico.data_hora).in_(meses_selecionados)
         )
@@ -492,8 +533,7 @@ def faturamento():
     total_imposto = sum(m["imposto"] for m in meses_do_ano)
     total_liquido = total_lucro_real - total_imposto  
     
-    #RENDERIZAÇÃO
- 
+    #RENDERIZAÇÃO 
     return render_template(
         'faturamento.html',
         anos_selecionados=anos_selecionados,
@@ -516,13 +556,64 @@ def detalhe_produto(produto_id):
         .order_by(Lote.data_entrada.asc())
         .all()
     )
+    
+    movimentacoes_saida = (
+        MovimentacaoSaida.query
+        .filter_by(produto_id=produto.id)
+        .order_by(MovimentacaoSaida.data_hora.desc())
+        .limit(10)
+        .all()
+    )
 
     return render_template(
         'produto_detalhe.html',
         produto=produto,
         lotes=lotes,
-        pytz=pytz
+        pytz=pytz,
+        movimentacoes_saida=movimentacoes_saida
     )
+    
+@bp.route('/movimentacao-saida/<int:movimentacao_id>/estornar', methods=['POST'])
+@gerente_required
+@transactional
+def estornar_movimentacao_saida(movimentacao_id):
+    movimentacao = MovimentacaoSaida.query.get_or_404(movimentacao_id)
+        
+    if movimentacao.estornada:
+        flash("Essa saída já foi estornada.", "erro")
+        return redirect(request.referrer or url_for('routes.estoque'))
+    
+    produto = Produto.query.get_or_404(movimentacao.produto_id)
+    
+    itens = (
+        ItemMovimentacaoSaida.query
+        .filter_by(movimentacao_saida_id=movimentacao.id)
+        .all()
+    )
+    
+    if not itens:
+        flash("Não foi possível estornar: itens da saída não encontrados.", "erro")
+        return redirect(request.referrer or url_for('routes.estoque'))
+  
+    produto.quantidade += movimentacao.quantidade
+    
+    for item in itens:
+        lote = Lote.query.get_or_404(item.lote_id)
+        lote.quantidade_atual += item.quantidade
+        
+    movimentacao.estornada = True
+    
+    registrar_historico(
+        acao="Estorno de Saída",
+        produto_nome=produto.nome,
+        quantidade=movimentacao.quantidade,
+        valor=-(movimentacao.valor_total),
+        lucro_real=-(movimentacao.lucro_real)
+    )
+    
+    flash("Saída estornada com sucesso.", "sucesso")
+    return redirect(request.referrer or url_for('routes.estoque'))
+    
 @bp.route('/lote/<int:lote_id>/nota-fiscal', methods=['POST'])
 @gerente_required
 @transactional
@@ -671,4 +762,3 @@ def estoque():
         gerente_logado=gerente_logado
     )
 
-     

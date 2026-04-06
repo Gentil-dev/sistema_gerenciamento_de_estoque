@@ -5,6 +5,7 @@ import os
 from flask_migrate import Migrate
 from datetime import timedelta
 
+
 db = SQLAlchemy()
 
 def create_app():
@@ -23,7 +24,13 @@ def create_app():
     db.init_app(app)
     
      
-    from app.models import Produto, Historico, DespesasMensais
+    from app.models import (
+    Produto, 
+    Historico, 
+    DespesasMensais, 
+    MovimentacaoSaida,
+    ItemMovimentacaoSaida,
+)
 
     migrate = Migrate(app, db)
         

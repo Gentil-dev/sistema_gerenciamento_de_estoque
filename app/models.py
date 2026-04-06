@@ -49,3 +49,42 @@ class DespesasMensais(db.Model):
     mes = db.Column(db.Integer, nullable=False)
     valor_despesa = db.Column(db.Numeric(10, 2), nullable=False, default=0)
     data_registro = db.Column(db.DateTime(timezone=True), nullable=False)
+
+class MovimentacaoSaida(db.Model):
+    __tablename__ = 'movimentacoes_saida'
+
+    id = db.Column(db.Integer, primary_key=True)
+    produto_id = db.Column(db.Integer, db.ForeignKey('produtos.id'), nullable=False)
+
+    quantidade = db.Column(db.Integer, nullable=False)
+    valor_total = db.Column(db.Numeric(10, 2), nullable=False)
+    custo_total = db.Column(db.Numeric(10, 2), nullable=False)
+    lucro_real = db.Column(db.Numeric(10, 2), nullable=False)
+
+    estornada = db.Column(db.Boolean, nullable=False, default=False)
+    data_hora = db.Column(db.DateTime(timezone=True), nullable=False)
+
+    produto = db.relationship('Produto', backref='movimentacoes_saida')
+    
+class ItemMovimentacaoSaida(db.Model):
+    __tablename__ = 'itens_movimentacao_saida'
+
+    id = db.Column(db.Integer, primary_key=True)
+    movimentacao_saida_id = db.Column(
+        db.Integer,
+        db.ForeignKey('movimentacoes_saida.id'),
+        nullable=False
+    )
+    lote_id = db.Column(
+        db.Integer,
+        db.ForeignKey('lotes.id'),
+        nullable=False
+    )
+    quantidade = db.Column(db.Integer, nullable=False)
+    custo_unitario = db.Column(db.Numeric(10, 2), nullable=False)
+
+    movimentacao_saida = db.relationship(
+        'MovimentacaoSaida',
+        backref='itens'
+    )
+    lote = db.relationship('Lote')

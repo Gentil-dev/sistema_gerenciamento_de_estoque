@@ -173,6 +173,59 @@
         <p><strong>Quantidade Total em Estoque:</strong> {{ produto.quantidade }}</p>
         <p><strong>Observação:</strong> {{ produto.observacao or '-' }}</p>
     </div>
+     
+    <h3>Últimas Saídas</h3>
+
+    {% if movimentacoes_saida %}
+        <table>
+            <thead>                
+                <tr>
+                    <th>ID</th>
+                    <th>Data/Hora</th>
+                    <th>Quantidade</th>
+                    <th>Valor Total (R$)</th>
+                    <th>Custo Total</th>
+                    <th>Lucro Real</th>
+                    <th>Status</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for mov in movimentacoes_saida %}
+                    <tr>
+                        <td>{{ mov.id }}</td>
+                        <td>
+                            {{ mov.data_hora
+                                .astimezone(pytz.timezone('America/Sao_Paulo')) 
+                                .strftime('%d/%m/%Y %H:%M:%S') }}
+                        </td>
+                        <td>{{ mov.quantidade }}</td>
+                        <td>{{ '%.2f'|format(mov.valor_total) }}</td>
+                        <td>{{ '%.2f'|format(mov.custo_total) }}</td>
+                        <td>{{ '%.2f'|format(mov.lucro_real) }}</td>
+                        <td>
+                            {% if mov.estornada %}
+                                Estornada
+                            {% else %}
+                                Ativa
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if not mov.estornada %}
+                                <form method="POST" action="{{ url_for('routes.estornar_movimentacao_saida', movimentacao_id=mov.id) }}">
+                                    <button type="submit">Estornar</button>
+                                </form>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Nenhuma saída registrada.</p>
+    {% endif %}
 
     <h3>Lotes (FIFO)</h3>
 
@@ -289,6 +342,5 @@
         });
     }
 </script>
-
 </body>
 </html>
