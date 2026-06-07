@@ -15,5 +15,10 @@ down_revision = '501ece629d80'
 branch_labels = None
 depends_on = None
 
+def upgrade():
+    pass
+
+def downgrade():
+    pass
 
  
